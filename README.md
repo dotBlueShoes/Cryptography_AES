@@ -1,4 +1,4 @@
-# Cryptogtphy_AES
+# Cryptography_AES gr.3
 
 Autorzy
 - Mikołaj Kisiel 242422
