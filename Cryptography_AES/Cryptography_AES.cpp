@@ -1,8 +1,4 @@
-﻿// Cryptography_AES.cpp : Definiuje punkt wejścia dla aplikacji.
-//
-
-#include "framework.h"
-#include "Cryptography_AES.h"
+﻿#include "Framework.hpp"
 
 #define MAX_LOADSTRING 100
 
