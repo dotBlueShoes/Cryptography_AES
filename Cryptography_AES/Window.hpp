@@ -16,6 +16,8 @@ namespace Window {
 
     // GLOBALS
     HINSTANCE currentProcess;
+    HWND buttonConfirmIO, buttonEncode, buttonDecode,
+        reInputPath, reOutputPath, reInput, reOutput;
 
     block LoadRichEdit() { LoadLibrary(TEXT(MSFTEDIT_DLL_PATH)); }
 
@@ -88,9 +90,6 @@ namespace Window {
             nullptr
         );
 
-        // Show Scrollbar
-        SendMessageW(windowEdit, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
-
         return windowEdit;
     }
 
@@ -150,10 +149,8 @@ namespace Window {
                 const pair<int32> 
                     positionWindowFile { 10, 0 },
                     areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, 60 },
-                    //areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, (windowArea.y - 20 - nonClientAreaOffset.y) / 2 },
                     positionWindowText { 10, areaWindowFile.y },
                     areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y};
-                    //areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, (windowArea.y - 20 - nonClientAreaOffset.y) / 2 };
 
                 const wchar* captionRegionFile = L"File", *captionRegionText = L"Text";
 
@@ -167,22 +164,50 @@ namespace Window {
                         positionOutputFile { 20 + areaInputFile.x + 10, 20 }, areaOutputFile { 200, 24 + 4 },
                         positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 }, areaConfirm { 100, 24 + 4 };
 
-                    const uint32 
-                        singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
-                        multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+                    const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
 
                     const wchar
                         *inputPreText = L"Input file path", 
                         *outputPreText = L"Output file path",
                         *confirmText = L"Confirm";
 
-                    CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
-                    CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
-                    CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
+                    reInputPath = CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
+                    reOutputPath = CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
+                    buttonConfirmIO = CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
                 }
 
                 { // Text Windows
 
+                    const pair<int32>
+                        positionInput { 20, positionWindowText.y + 20 },
+                        areaInput { 300, areaWindowText.y - 20 - 10 },
+                        positionOutput { positionInput.x + areaInput.x + 10, positionWindowText.y + 20 },
+                        areaOutput { 300, areaWindowText.y - 20 - 10 },
+                        positionEncode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 },
+                        areaEncode { 100, 28 },
+                        positionDecode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 + areaEncode.y + 10 },
+                        areaDecode { 100, 28 };
+
+
+                    const uint32 multiLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+
+                    const wchar
+                        *inputPreText = L"Text",
+                        *outputPreText = L"",
+                        *encodeText = L"Encode",
+                        *decodeText = L"Decode";
+
+                    reInput = CreateRichEdit(process, windowHandle, positionInput, areaInput, multiLineStyle, inputPreText);
+                    reOutput = CreateRichEdit(process, windowHandle, positionOutput, areaOutput, multiLineStyle, outputPreText);
+
+                    // Show Scrollbar
+                    SendMessageW(reInput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+                    SendMessageW(reOutput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+
+                    buttonEncode = CreateButton(process, windowHandle, positionEncode, areaEncode, encodeText);
+                    buttonDecode = CreateButton(process, windowHandle, positionDecode, areaDecode, decodeText);
+
+                    //WM_GETTEXTLENGTH
                 }
             }
 
@@ -241,17 +266,50 @@ namespace Window {
     ) {
         switch (message) {
             case WM_COMMAND: {
+
                 int wmId = LOWORD(wParam);
+                auto id = (HWND)lParam;
+
+                if (id == buttonConfirmIO) {
+                    const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
+                    const size inputStringTerminationPosition = inputFilePathLength + 1;
+                    const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
+                    const size outputStringTerminationPosition = outputFilePathLength + 1;
+
+                    wchar* inputPathBuffor = new wchar[inputFilePathLength];
+                    wchar* outputPathBuffor = new wchar[outputFilePathLength];
+
+                    // check result ???
+                    SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
+                    SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
+
+                    //m_reportFileName[reult + 1] = '\0';
+                    //int myIntValue = 20;
+                    
+                    //swprintf_s(m_reportFileName, L"%d", (uint64)reult);
+                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", inputPathBuffor, MB_ICONINFORMATION);
+                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", outputPathBuffor, MB_ICONINFORMATION);
+                    // 
+                    //SendMessageW(decodeWindow, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+
+                } else if (id == buttonEncode) {
+                    //MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"2!", MB_ICONINFORMATION);
+                } else if (id == buttonDecode) {
+                    //MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"3!", MB_ICONINFORMATION);
+                }
+
                 switch (wmId) {
-                    //case IDM_ABOUT:
-                    //    DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                    //    break;
                     case IDM_EXIT:
                         DestroyWindow(hWnd);
                         break;
                     default:
                         return DefWindowProc(hWnd, message, wParam, lParam);
                 }
+
+            } break;
+
+            case WM_GETTEXTLENGTH: {
+                MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"2!", MB_ICONINFORMATION);
             } break;
 
             case WM_PAINT: {
