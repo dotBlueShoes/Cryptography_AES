@@ -127,10 +127,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Cryptography_AES.h" />
-    <ClInclude Include="framework.h" />
+    <ClInclude Include="AES.hpp" />
+    <ClInclude Include="FileIO.hpp" />
+    <ClInclude Include="Framework.hpp" />
+    <ClInclude Include="main.hpp" />
+    <ClInclude Include="Matrix.hpp" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SBox.hpp" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cryptography_AES.cpp" />

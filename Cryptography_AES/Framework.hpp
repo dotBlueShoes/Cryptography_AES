@@ -11,14 +11,40 @@
 #include <memory.h>
 #include <tchar.h>
 #include <inttypes.h>					// uint8_t ...
+#include <fstream>
+
+// Helpers
+#include <bitset>
+#include <vector>
+#include <string>
 
 // RESOURCE
-#include "resource.h"
+#include "Resource.h"
 
 // SIMPLE DATATYPES
 #define block inline auto
+
+using int64 = int64_t;
+using int32 = int32_t;
+using int16 = int16_t;
+using int8 = int8_t;
+
 using uint64 = uint64_t;
 using uint32 = uint32_t;
 using uint16 = uint16_t;
 using uint8 = uint8_t;
 
+using byte = uint8;
+using wchar = wchar_t;
+using size = uint64;
+
+// ARRAY
+#include <array>
+template <class T, size length>
+using array = std::array<T, length>;
+
+// PAIR
+template <class T>
+struct pair {
+	T x, y;
+};
