@@ -16,7 +16,7 @@ int32 APIENTRY wWinMain (
     UNREFERENCED_PARAMETER(parentProcess);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    { // Dynamic Library Loading
+    { // Dynamic Library Loading.
         Window::LoadRichEdit();
     }
 
@@ -24,8 +24,13 @@ int32 APIENTRY wWinMain (
         Version1::Test();
     }
 
-    Window::MyRegisterClass(process, classNameMainWindow);
-    if (!Window::InitInstance(process, nCmdShow, classNameMainWindow, titleMainWindow)) return FALSE;
+    { // Window Creation.
+        const pair<int32> windowPosition { CW_USEDEFAULT, 0 }, windowArea { 1000, 500 };
+
+        Window::MyRegisterClass(process, classNameMainWindow);
+        if (!Window::InitInstance(process, nCmdShow, classNameMainWindow, titleMainWindow, windowPosition, windowArea)) return FALSE;
+    }
+    
 
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0)) {

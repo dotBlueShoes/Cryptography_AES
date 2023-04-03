@@ -2,7 +2,8 @@
 #include "Framework.hpp"
 #include <RichEdit.h>
 
-#define MSFTEDIT_DLL_PATH "Msftedit.dll"
+#define MSFTEDIT_DLL_PATH "Msftedit.dll" // a.k.a TextEdit 4.1
+#define BUTTON_CLASS L"BUTTON"
 
 //#pragma comment(lib, MSFTEDIT_DLL_PATH) // - we do LoadLibrary now
 
@@ -16,28 +17,81 @@ namespace Window {
     // GLOBALS
     HINSTANCE currentProcess;
 
-    block LoadRichEdit() {
-        LoadLibrary(TEXT(MSFTEDIT_DLL_PATH));
-    }
+    block LoadRichEdit() { LoadLibrary(TEXT(MSFTEDIT_DLL_PATH)); }
 
     // 1. Create single line richedit
     // 2. Create multiline with scrollbar
     // 3. Make it possible to extract value from such field.
     //  eg. to byte buffor and back to RichEdit
 
-    HWND CreateRichEdit(
+    auto CreateGroupBox (
+        HINSTANCE& process,
         HWND& parentWindow,
         const pair<int32>& position,
         const pair<int32>& area,
-        HINSTANCE process,
+        const wchar* caption = L"Caption"
+    ) {
+        HWND groupBox = CreateWindowEx(
+            NULL, BUTTON_CLASS,
+            caption,
+            WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            position.x, position.y,
+            area.x, area.y,
+            parentWindow,
+            nullptr,
+            process,
+            nullptr
+        );
+        return groupBox;
+    }
+
+    auto CreateButton (
+        HINSTANCE& process,
+        HWND& parentWindow,
+        const pair<int32>& position,
+        const pair<int32>& area,
+        const wchar* buttonText = L"Click Me!"
+    ) {
+        HWND windowButton = CreateWindowEx(
+            NULL, BUTTON_CLASS,
+            buttonText,
+            WS_CHILD | WS_VISIBLE,
+            position.x, position.y,
+            area.x, area.y,
+            parentWindow,
+            nullptr,
+            process,
+            nullptr
+        );
+
+        return windowButton;
+    }
+
+    auto CreateRichEdit (
+        HINSTANCE& process,
+        HWND& parentWindow,
+        const pair<int32>& position,
+        const pair<int32>& area,
+        const uint32&  windowStyles,
         const wchar* preText = L"Type here"
     ) {
-        HWND hwndEdit = CreateWindowEx(0, MSFTEDIT_CLASS, preText,
-            ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
-            position.x, position.y, area.x, area.y,
-            parentWindow, NULL, process, NULL);
 
-        return hwndEdit;
+        HWND windowEdit = CreateWindowEx(
+            NULL, MSFTEDIT_CLASS, 
+            preText,
+            windowStyles,
+            position.x, position.y, 
+            area.x, area.y,
+            parentWindow, 
+            nullptr,
+            process, 
+            nullptr
+        );
+
+        // Show Scrollbar
+        SendMessageW(windowEdit, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+
+        return windowEdit;
     }
 
     ATOM MyRegisterClass(
@@ -65,7 +119,9 @@ namespace Window {
         HINSTANCE& process,
         const int& nCmdShow, 
         const wchar* const windowClassName,
-        const wchar* const windowTitle
+        const wchar* const windowTitle,
+        const pair<int32>& windowPosition,
+        const pair<int32>& windowArea
     ) {
         currentProcess = process;
 
@@ -73,8 +129,8 @@ namespace Window {
             windowClassName, 
             windowTitle, 
             WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, 0, 
-            CW_USEDEFAULT, 0, 
+            windowPosition.x, windowPosition.y,
+            windowArea.x, windowArea.y,
             nullptr, 
             nullptr, 
             process,
@@ -83,10 +139,93 @@ namespace Window {
 
         if (!windowHandle) return FALSE;
 
-        const pair<int32> position { 0, 0 }, area { 100, 100};
+        { // Creation of inner windows.
 
+            { // Caption Boxes
 
-        CreateRichEdit(windowHandle, position, area, process);
+                // Different windows styles 7,8,10 and such have their own nonClientArea.
+                //  for shoutcut this is how it should be on windows 10.
+                const pair<int32> nonClientAreaOffset { 15, 28 };
+
+                const pair<int32> 
+                    positionWindowFile { 10, 0 },
+                    areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, 60 },
+                    //areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, (windowArea.y - 20 - nonClientAreaOffset.y) / 2 },
+                    positionWindowText { 10, areaWindowFile.y },
+                    areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y};
+                    //areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, (windowArea.y - 20 - nonClientAreaOffset.y) / 2 };
+
+                const wchar* captionRegionFile = L"File", *captionRegionText = L"Text";
+
+                CreateGroupBox(process, windowHandle, positionWindowFile, areaWindowFile, captionRegionFile);
+                CreateGroupBox(process, windowHandle, positionWindowText, areaWindowText, captionRegionText);
+
+                { // File Windows
+
+                    const pair<int32> 
+                        positionInputFile { 20, 20 }, areaInputFile { 200, 24 + 4 },
+                        positionOutputFile { 20 + areaInputFile.x + 10, 20 }, areaOutputFile { 200, 24 + 4 },
+                        positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 }, areaConfirm { 100, 24 + 4 };
+
+                    const uint32 
+                        singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
+                        multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+
+                    const wchar
+                        *inputPreText = L"Input file path", 
+                        *outputPreText = L"Output file path",
+                        *confirmText = L"Confirm";
+
+                    CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
+                    CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
+                    CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
+                }
+
+                { // Text Windows
+
+                }
+            }
+
+            
+
+            const pair<int32> position { 20, 20 }, area { 100, 100};
+
+            const uint32 singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
+                multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+
+            
+
+            //CreateRichEdit(process, windowHandle, position, area, singleLineStyle);
+            //CreateButton(process, windowHandle, { 100, 100 }, { 150, 30 }, L"Click!");
+
+            
+
+            //CreateWindowEx(
+            //    NULL, BUTTON_CLASS,
+            //    captionRegionFile,
+            //    WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            //    10, 0,
+            //    windowArea.x - 20 - nonClientAreaOffset.x, 
+            //    ((windowArea.y - 20) / 2) - nonClientAreaOffset.y,
+            //    windowHandle,
+            //    nullptr,
+            //    process,
+            //    nullptr
+            //);
+            //
+            //CreateWindowEx(
+            //    NULL, BUTTON_CLASS,
+            //    captionRegionText,
+            //    WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
+            //    10, ((windowArea.y - 20) / 2) - nonClientAreaOffset.y + 10,
+            //    windowArea.x - 20 - nonClientAreaOffset.x,
+            //    ((windowArea.y - 20) / 2) - nonClientAreaOffset.y,
+            //    windowHandle,
+            //    nullptr,
+            //    process,
+            //    nullptr
+            //);
+        }
 
         ShowWindow(windowHandle, nCmdShow);
         UpdateWindow(windowHandle);
