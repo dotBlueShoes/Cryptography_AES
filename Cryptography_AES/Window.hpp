@@ -1,6 +1,7 @@
 #pragma once
 #include "Framework.hpp"
 #include <RichEdit.h>
+#include "FileIO.hpp"
 
 #define MSFTEDIT_DLL_PATH "Msftedit.dll" // a.k.a TextEdit 4.1
 #define BUTTON_CLASS L"BUTTON"
@@ -20,11 +21,6 @@ namespace Window {
         reInputPath, reOutputPath, reInput, reOutput;
 
     block LoadRichEdit() { LoadLibrary(TEXT(MSFTEDIT_DLL_PATH)); }
-
-    // 1. Create single line richedit
-    // 2. Create multiline with scrollbar
-    // 3. Make it possible to extract value from such field.
-    //  eg. to byte buffor and back to RichEdit
 
     auto CreateGroupBox (
         HINSTANCE& process,
@@ -160,8 +156,8 @@ namespace Window {
                 { // File Windows
 
                     const pair<int32> 
-                        positionInputFile { 20, 20 }, areaInputFile { 200, 24 + 4 },
-                        positionOutputFile { 20 + areaInputFile.x + 10, 20 }, areaOutputFile { 200, 24 + 4 },
+                        positionInputFile { 20, 20 }, areaInputFile { 400, 24 + 4 },
+                        positionOutputFile { 20 + areaInputFile.x + 10, 20 }, areaOutputFile { 400, 24 + 4 },
                         positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 }, areaConfirm { 100, 24 + 4 };
 
                     const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
@@ -180,9 +176,9 @@ namespace Window {
 
                     const pair<int32>
                         positionInput { 20, positionWindowText.y + 20 },
-                        areaInput { 300, areaWindowText.y - 20 - 10 },
+                        areaInput { 400, areaWindowText.y - 20 - 10 },
                         positionOutput { positionInput.x + areaInput.x + 10, positionWindowText.y + 20 },
-                        areaOutput { 300, areaWindowText.y - 20 - 10 },
+                        areaOutput { 400, areaWindowText.y - 20 - 10 },
                         positionEncode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 },
                         areaEncode { 100, 28 },
                         positionDecode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 + areaEncode.y + 10 },
@@ -206,8 +202,6 @@ namespace Window {
 
                     buttonEncode = CreateButton(process, windowHandle, positionEncode, areaEncode, encodeText);
                     buttonDecode = CreateButton(process, windowHandle, positionDecode, areaDecode, decodeText);
-
-                    //WM_GETTEXTLENGTH
                 }
             }
 
@@ -217,39 +211,6 @@ namespace Window {
 
             const uint32 singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
                 multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
-
-            
-
-            //CreateRichEdit(process, windowHandle, position, area, singleLineStyle);
-            //CreateButton(process, windowHandle, { 100, 100 }, { 150, 30 }, L"Click!");
-
-            
-
-            //CreateWindowEx(
-            //    NULL, BUTTON_CLASS,
-            //    captionRegionFile,
-            //    WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
-            //    10, 0,
-            //    windowArea.x - 20 - nonClientAreaOffset.x, 
-            //    ((windowArea.y - 20) / 2) - nonClientAreaOffset.y,
-            //    windowHandle,
-            //    nullptr,
-            //    process,
-            //    nullptr
-            //);
-            //
-            //CreateWindowEx(
-            //    NULL, BUTTON_CLASS,
-            //    captionRegionText,
-            //    WS_CHILD | WS_VISIBLE | BS_GROUPBOX,
-            //    10, ((windowArea.y - 20) / 2) - nonClientAreaOffset.y + 10,
-            //    windowArea.x - 20 - nonClientAreaOffset.x,
-            //    ((windowArea.y - 20) / 2) - nonClientAreaOffset.y,
-            //    windowHandle,
-            //    nullptr,
-            //    process,
-            //    nullptr
-            //);
         }
 
         ShowWindow(windowHandle, nCmdShow);
@@ -258,8 +219,82 @@ namespace Window {
         return TRUE;
     }
 
+    block OnButtonConfirmClicked(
+        const HWND& windowHandle
+    ) {
+        // READ LENGTH
+        const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
+        const size inputStringTerminationPosition = inputFilePathLength + 1;
+        const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
+        const size outputStringTerminationPosition = outputFilePathLength + 1;
+
+        wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
+        wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
+
+        // READ DATA // !!! check result ???
+        SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
+        SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
+
+        { // PROCESS
+            std::vector<byte> readData(FileIO::Read::File(inputPathBuffor));
+            FileIO::Write::File(outputPathBuffor, readData.size(), readData.data());
+        }
+
+        delete[] inputPathBuffor;
+        delete[] outputPathBuffor;
+    }
+
+    block OnButtonEncodeClick(
+        const HWND& windowHandle
+    ) {
+
+        // READ LENGTH
+        const size inputLength = SendMessageW(reInput, WM_GETTEXTLENGTH, NULL, NULL);
+        const size inputStringTerminationPosition = inputLength + 1;
+
+        wchar* inputBuffor = new wchar[inputStringTerminationPosition];
+
+        // READ DATA
+        SendMessageW(reInput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
+
+        { // PROCESS
+            wchar* outputBuffer = inputBuffor;
+
+            SendMessageW(reOutput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
+
+            
+        }
+
+        delete[] inputBuffor;
+
+        //MessageBox(windowHandle, inputBuffor, L"Nacisn¹³eœ przycisk!", MB_ICONINFORMATION);
+    }
+
+    block OnButtonDecodeClick(
+        const HWND& windowHandle
+    ) {
+        // READ LENGTH
+        const size inputLength = SendMessageW(reOutput, WM_GETTEXTLENGTH, NULL, NULL);
+        const size inputStringTerminationPosition = inputLength + 1;
+
+        wchar* inputBuffor = new wchar[inputStringTerminationPosition];
+
+        // READ DATA
+        SendMessageW(reOutput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
+
+        { // PROCESS
+            wchar* outputBuffer = inputBuffor;
+
+            SendMessageW(reInput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
+
+
+        }
+
+        delete[] inputBuffor;
+    }
+
     LRESULT CALLBACK WndProc(
-        HWND hWnd,
+        HWND windowHandle,
         UINT message,
         WPARAM wParam,
         LPARAM lParam
@@ -271,63 +306,31 @@ namespace Window {
                 auto id = (HWND)lParam;
 
                 if (id == buttonConfirmIO) {
-
-                    const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
-                    const size inputStringTerminationPosition = inputFilePathLength + 1;
-                    const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
-                    const size outputStringTerminationPosition = outputFilePathLength + 1;
-
-                    wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
-                    wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
-
-                    // check result ???
-                    SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
-                    SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
-
-                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", inputPathBuffor, MB_ICONINFORMATION);
-                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", outputPathBuffor, MB_ICONINFORMATION);
-
-                    delete[] inputPathBuffor;
-                    delete[] outputPathBuffor;
-
+                    OnButtonConfirmClicked(windowHandle);
                 } else if (id == buttonEncode) {
-
-                    const size inputLength = SendMessageW(reInput, WM_GETTEXTLENGTH, NULL, NULL);
-                    const size inputStringTerminationPosition = inputLength + 1;
-                    
-                    wchar* inputBuffor = new wchar[inputLength];
-                    
-                    SendMessageW(reInput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
-                    
-                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", inputBuffor, MB_ICONINFORMATION);
-
+                    OnButtonEncodeClick(windowHandle);
                 } else if (id == buttonDecode) {
-                    
-                    wchar* outputBuffer = new wchar[4] { L"lol" };
-                    
-                    SendMessageW(reOutput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
-
-                    delete[] outputBuffer;
+                    OnButtonDecodeClick(windowHandle);
                 }
 
                 switch (wmId) {
                     case IDM_EXIT:
-                        DestroyWindow(hWnd);
+                        DestroyWindow(windowHandle);
                         break;
                     default:
-                        return DefWindowProc(hWnd, message, wParam, lParam);
+                        return DefWindowProc(windowHandle, message, wParam, lParam);
                 }
 
             } break;
 
             case WM_GETTEXTLENGTH: {
-                MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"2!", MB_ICONINFORMATION);
+                MessageBox(windowHandle, L"Nacisn¹³eœ przycisk!", L"2!", MB_ICONINFORMATION);
             } break;
 
             case WM_PAINT: {
                 PAINTSTRUCT ps;
-                HDC hdc = BeginPaint(hWnd, &ps);
-                EndPaint(hWnd, &ps);
+                HDC hdc = BeginPaint(windowHandle, &ps);
+                EndPaint(windowHandle, &ps);
             } break;
 
             case WM_DESTROY:
@@ -335,7 +338,7 @@ namespace Window {
                 break;
 
             default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
+                return DefWindowProc(windowHandle, message, wParam, lParam);
         }
 
         return 0;
