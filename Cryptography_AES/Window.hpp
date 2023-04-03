@@ -271,31 +271,43 @@ namespace Window {
                 auto id = (HWND)lParam;
 
                 if (id == buttonConfirmIO) {
+
                     const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
                     const size inputStringTerminationPosition = inputFilePathLength + 1;
                     const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
                     const size outputStringTerminationPosition = outputFilePathLength + 1;
 
-                    wchar* inputPathBuffor = new wchar[inputFilePathLength];
-                    wchar* outputPathBuffor = new wchar[outputFilePathLength];
+                    wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
+                    wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
 
                     // check result ???
                     SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
                     SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
 
-                    //m_reportFileName[reult + 1] = '\0';
-                    //int myIntValue = 20;
-                    
-                    //swprintf_s(m_reportFileName, L"%d", (uint64)reult);
                     MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", inputPathBuffor, MB_ICONINFORMATION);
                     MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", outputPathBuffor, MB_ICONINFORMATION);
-                    // 
-                    //SendMessageW(decodeWindow, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+
+                    delete[] inputPathBuffor;
+                    delete[] outputPathBuffor;
 
                 } else if (id == buttonEncode) {
-                    //MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"2!", MB_ICONINFORMATION);
+
+                    const size inputLength = SendMessageW(reInput, WM_GETTEXTLENGTH, NULL, NULL);
+                    const size inputStringTerminationPosition = inputLength + 1;
+                    
+                    wchar* inputBuffor = new wchar[inputLength];
+                    
+                    SendMessageW(reInput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
+                    
+                    MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", inputBuffor, MB_ICONINFORMATION);
+
                 } else if (id == buttonDecode) {
-                    //MessageBox(hWnd, L"Nacisn¹³eœ przycisk!", L"3!", MB_ICONINFORMATION);
+                    
+                    wchar* outputBuffer = new wchar[4] { L"lol" };
+                    
+                    SendMessageW(reOutput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
+
+                    delete[] outputBuffer;
                 }
 
                 switch (wmId) {
