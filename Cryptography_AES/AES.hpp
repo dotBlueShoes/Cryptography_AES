@@ -35,8 +35,8 @@
 
 namespace AES {
 
-	// Block representing read / write bytes (IO) ( 16 * 16 = 256bits )
-	using dataBlock = Matrix::Matrix4x4<uint16>; 
+	// Block representing read / write bytes (IO) ( 16 * 8 = 128bits )
+	using dataBlock = Matrix::Matrix4x4<uint8>; 
 
 	// BitKey128
 	// - 10 cykli powtórzeñ dla klucza 128 - bitowego
@@ -46,6 +46,30 @@ namespace AES {
 			uint64 x;
 			uint64 y;
 		};
+
+		block SubBytes(
+		
+		) {
+
+		}
+
+		block ShiftRows(
+		
+		) {
+
+		}
+
+		block MixColumns(
+		
+		) {
+
+		}
+
+		block AddRoundKey(
+		
+		) {
+
+		}
 
 	}
 
@@ -65,12 +89,70 @@ namespace AES {
 	// 14 cykli powtórzeñ dla klucza 256 - bitowego
 	namespace BitKey256 {
 
-		struct key256 {
-			uint64 x;
-			uint64 y;
-			uint64 z;
-			uint64 w;
-		};
+		///*
+		// * The cipher Key.
+		// */
+		//int K;
+
+		/*
+		 * Number of columns (32-bit words) comprising the State. For this
+		 * standard, Nb = 4.
+		 */
+		const int Nb = 4;
+
+		/*
+		 * Number of 32-bit words comprising the Cipher Key. For this
+		 * standard, Nk = 4, 6, or 8.
+		 */
+		const int Nk = 8;
+
+		/*
+		 * Number of rounds, which is a function of  Nk  and  Nb (which is
+		 * fixed). For this standard, Nr = 10, 12, or 14.
+		 */
+		int Nr = 14;
+
+		using Key256 = uint8[Nk * Nb];
+
+		//key256& expandedKey; // w
+
+		block KeyExpansion(
+			OUT Key256& expandedKey,
+			IN const Key256& key
+		) {
+			uint8 lengh = Nb * (Nr + 1); // 4 * 15 = 60.
+			uint8 tmp[Nb];
+
+			// Firstly we copy from key to expendedKey
+			for (size i = 0; i < Nk; i++) {
+				expandedKey[Nb * i + 0] = key[Nb * i + 0];
+				expandedKey[Nb * i + 1] = key[Nb * i + 1];
+				expandedKey[Nb * i + 2] = key[Nb * i + 2];
+				expandedKey[Nb * i + 3] = key[Nb * i + 3];
+			}
+
+			// Here come's the rounds.
+			for (size i = Nk; i < lengh; i++) {
+				tmp[0] = expandedKey[Nb * (i - 1) + 0];
+				tmp[1] = expandedKey[Nb * (i - 1) + 1];
+				tmp[2] = expandedKey[Nb * (i - 1) + 2];
+				tmp[3] = expandedKey[Nb * (i - 1) + 3];
+
+			//	if (i % Nk == 0) { // first round
+			//		//rot_word(tmp);
+			//		//sub_word(tmp);
+			//		//coef_add(tmp, Rcon(i / Nk), tmp);
+			//	} else if (Nk > 6 && i % Nk == 4) { // key dependant code ...
+			//		//sub_word(tmp);
+			//	}
+			//
+			//	expandedKey[4 * i + 0] = expandedKey[4 * (i - Nk) + 0] ^ tmp[0];
+			//	expandedKey[4 * i + 1] = expandedKey[4 * (i - Nk) + 1] ^ tmp[1];
+			//	expandedKey[4 * i + 2] = expandedKey[4 * (i - Nk) + 2] ^ tmp[2];
+			//	expandedKey[4 * i + 3] = expandedKey[4 * (i - Nk) + 3] ^ tmp[3];
+			}
+
+		}
 
 	}
 

@@ -3,8 +3,8 @@
 #include "main.hpp"
 
 // Globals
-const wchar classNameMainWindow[] = LR"(MainWindow)",
-    titleMainWindow[] = LR"(AES 242422 242539)";
+const wchar classNameMainWindow[] = L"MainWindow",
+    titleMainWindow[] = L"AES 242422 242539";
 
 int32 APIENTRY wWinMain (
     IN          HINSTANCE process,
@@ -20,15 +20,14 @@ int32 APIENTRY wWinMain (
         Window::LoadRichEdit();
     }
 
-    {
-        Version1::Test();
-    }
-
     { // Window Creation.
         const pair<int32> windowPosition { CW_USEDEFAULT, 0 }, windowArea { 1000, 500 };
 
         Window::MyRegisterClass(process, classNameMainWindow);
         if (!Window::InitInstance(process, nCmdShow, classNameMainWindow, titleMainWindow, windowPosition, windowArea)) return FALSE;
+
+        //Tests::ReadWriteTest();
+        Tests::KeyExpensionTest();
     }
     
 
