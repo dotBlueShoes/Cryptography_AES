@@ -131,6 +131,8 @@
     <ClInclude Include="FileIO.hpp" />
     <ClInclude Include="Framework.hpp" />
     <ClInclude Include="main.hpp" />
+    <ClInclude Include="Windows\Windows.hpp" />
+    <ClInclude Include="Windows\MainTab.hpp" />
     <ClInclude Include="Matrix.hpp" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SBox.hpp" />

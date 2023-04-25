@@ -1,7 +1,9 @@
 #pragma once
 #include "Framework.hpp"
-#include <RichEdit.h>
+#include "Windows/MainTab.hpp"
 #include "FileIO.hpp"
+
+#include <RichEdit.h>
 
 #define MSFTEDIT_DLL_PATH "Msftedit.dll" // a.k.a TextEdit 4.1
 #define BUTTON_CLASS L"BUTTON"
@@ -136,81 +138,95 @@ namespace Window {
 
         { // Creation of inner windows.
 
-            { // Caption Boxes
+            { // Tab Window
 
-                // Different windows styles 7,8,10 and such have their own nonClientArea.
-                //  for shoutcut this is how it should be on windows 10.
-                const pair<int32> nonClientAreaOffset { 15, 28 };
+                const pair<int32> tabPosition { 0, 0 };
+                const pair<int32> tabStyleOffset { 16, 26 }; // this should be related to nonClientAreaOffset and tabXOffset... fix it later...
+                const pair<int32> tabArea { windowArea.x - tabStyleOffset.x, windowArea.y - tabStyleOffset.y - 13 };
+                const int32 tabXOffset = 24;
 
-                const pair<int32> 
-                    positionWindowFile { 10, 0 },
-                    areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, 60 },
-                    positionWindowText { 10, areaWindowFile.y },
-                    areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y};
+                Windows::MainTab::Create (
+                    Windows::MainTab::tabHandle,
+                    windowHandle,
+                    process,
+                    tabPosition,
+                    tabArea
+                );
 
-                const wchar* captionRegionFile = L"File", *captionRegionText = L"Text";
-
-                CreateGroupBox(process, windowHandle, positionWindowFile, areaWindowFile, captionRegionFile);
-                CreateGroupBox(process, windowHandle, positionWindowText, areaWindowText, captionRegionText);
-
-                { // File Windows
-
-                    const pair<int32> 
-                        positionInputFile { 20, 20 }, areaInputFile { 400, 24 + 4 },
-                        positionOutputFile { 20 + areaInputFile.x + 10, 20 }, areaOutputFile { 400, 24 + 4 },
-                        positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 }, areaConfirm { 100, 24 + 4 };
-
-                    const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
-
-                    const wchar
-                        *inputPreText = L"Input file path", 
-                        *outputPreText = L"Output file path",
-                        *confirmText = L"Confirm";
-
-                    reInputPath = CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
-                    reOutputPath = CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
-                    buttonConfirmIO = CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
-                }
-
-                { // Text Windows
-
+                { // Caption Boxes
+                
+                    // Different windows styles 7,8,10 and such have their own nonClientArea.
+                    //  for shoutcut this is how it should be on windows 10.
+                    const pair<int32> nonClientAreaOffset { 15, 28 };
+                
                     const pair<int32>
-                        positionInput { 20, positionWindowText.y + 20 },
-                        areaInput { 400, areaWindowText.y - 20 - 10 },
-                        positionOutput { positionInput.x + areaInput.x + 10, positionWindowText.y + 20 },
-                        areaOutput { 400, areaWindowText.y - 20 - 10 },
-                        positionEncode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 },
-                        areaEncode { 100, 28 },
-                        positionDecode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 + areaEncode.y + 10 },
-                        areaDecode { 100, 28 };
-
-
-                    const uint32 multiLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
-
-                    const wchar
-                        *inputPreText = L"Text",
-                        *outputPreText = L"",
-                        *encodeText = L"Encode",
-                        *decodeText = L"Decode";
-
-                    reInput = CreateRichEdit(process, windowHandle, positionInput, areaInput, multiLineStyle, inputPreText);
-                    reOutput = CreateRichEdit(process, windowHandle, positionOutput, areaOutput, multiLineStyle, outputPreText);
-
-                    // Show Scrollbar
-                    SendMessageW(reInput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
-                    SendMessageW(reOutput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
-
-                    buttonEncode = CreateButton(process, windowHandle, positionEncode, areaEncode, encodeText);
-                    buttonDecode = CreateButton(process, windowHandle, positionDecode, areaDecode, decodeText);
+                        positionWindowFile { 10, 0 + tabXOffset },
+                        areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, 60 },
+                        positionWindowText { 10, areaWindowFile.y + tabXOffset },
+                        areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y - tabStyleOffset.y };
+                
+                    const wchar* captionRegionFile = L"File", * captionRegionText = L"Text";
+                
+                    CreateGroupBox(process, windowHandle, positionWindowFile, areaWindowFile, captionRegionFile);
+                    CreateGroupBox(process, windowHandle, positionWindowText, areaWindowText, captionRegionText);
+                
+                    { // File Windows
+                
+                        const pair<int32>
+                            positionInputFile { 20, 20 + tabXOffset }, areaInputFile { 400, 24 + 4 },
+                            positionOutputFile { 20 + areaInputFile.x + 10, 20 + tabXOffset }, areaOutputFile { 400, 24 + 4 },
+                            positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 + tabXOffset }, areaConfirm { 100, 24 + 4 };
+                
+                        const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+                
+                        const wchar
+                            * inputPreText = L"Input file path",
+                            * outputPreText = L"Output file path",
+                            * confirmText = L"Confirm";
+                
+                        reInputPath = CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
+                        reOutputPath = CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
+                        buttonConfirmIO = CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
+                    }
+                
+                    { // Text Windows
+                
+                        const pair<int32>
+                            positionInput { 20, positionWindowText.y + 20 },
+                            areaInput { 400, areaWindowText.y - 20 - 10 - tabStyleOffset.y },
+                            positionOutput { positionInput.x + areaInput.x + 10, positionWindowText.y + 20 },
+                            areaOutput { 400, areaWindowText.y - 20 - 10 - tabStyleOffset.y },
+                            positionEncode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 },
+                            areaEncode { 100, 28 },
+                            positionDecode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 + areaEncode.y + 10 },
+                            areaDecode { 100, 28 };
+                
+                
+                        const uint32 multiLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+                
+                        const wchar
+                            * inputPreText = L"Text",
+                            * outputPreText = L"",
+                            * encodeText = L"Encode",
+                            * decodeText = L"Decode";
+                
+                        reInput = CreateRichEdit(process, windowHandle, positionInput, areaInput, multiLineStyle, inputPreText);
+                        reOutput = CreateRichEdit(process, windowHandle, positionOutput, areaOutput, multiLineStyle, outputPreText);
+                
+                        // Show Scrollbar
+                        SendMessageW(reInput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+                        SendMessageW(reOutput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
+                
+                        buttonEncode = CreateButton(process, windowHandle, positionEncode, areaEncode, encodeText);
+                        buttonDecode = CreateButton(process, windowHandle, positionDecode, areaDecode, decodeText);
+                    }
                 }
             }
 
-            
-
-            const pair<int32> position { 20, 20 }, area { 100, 100};
-
-            const uint32 singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
-                multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+            //const pair<int32> position { 20, 20 }, area { 100, 100};
+            //
+            //const uint32 singleLineStyle = ES_MULTILINE | WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
+            //    multiLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
         }
 
         ShowWindow(windowHandle, nCmdShow);
