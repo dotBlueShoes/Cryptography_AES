@@ -127,10 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AES.hpp" />
+    <ClInclude Include="AES\AES.hpp" />
     <ClInclude Include="FileIO.hpp" />
     <ClInclude Include="Framework.hpp" />
-    <ClInclude Include="main.hpp" />
+    <ClInclude Include="AES\gmult.hpp" />
+    <ClInclude Include="AES\main.hpp" />
     <ClInclude Include="Windows\Windows.hpp" />
     <ClInclude Include="Windows\MainTab.hpp" />
     <ClInclude Include="Matrix.hpp" />
