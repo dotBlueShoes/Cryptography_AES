@@ -45,12 +45,19 @@ int32 APIENTRY wWinMain (
             //Tests::ReadWriteTest();
 
             { // FILE
-                const wchar* const nocodedFilePath = LR"(data/kryptoTest.pdf)";
-                const wchar* const encodedFilePath = LR"(data/aaa.pdf)";
-                const wchar* const decodedFilePath = LR"(data/bbb.pdf)";
+                //const wchar* const nocodedFilePath = LR"(data/kryptoTest.pdf)";
+                //const wchar* const encodedFilePath = LR"(data/aaa.pdf)";
+                //const wchar* const decodedFilePath = LR"(data/bbb.pdf)";
+                const wchar* const nocodedFilePath = LR"(data/1.txt)";
+                const wchar* const encodedFilePath = LR"(data/2.txt)";
+                const wchar* const decodedFilePath = LR"(data/3.txt)";
                 uint8 extraBytes;
-                AES::ReadEncodeWrite(extraBytes, nocodedFilePath, encodedFilePath, AES::TEST::Key256::sample1);
-                AES::ReadDecodeWrite(encodedFilePath, decodedFilePath, AES::TEST::Key256::sample1, extraBytes);
+                //AES::ReadEncodeWrite<AES::Key128>(extraBytes, nocodedFilePath, encodedFilePath, AES::TEST::Key128::sample1);
+                //AES::ReadDecodeWrite<AES::Key128>(encodedFilePath, decodedFilePath, AES::TEST::Key128::sample1, extraBytes);
+                //AES::ReadEncodeWrite<AES::Key192>(extraBytes, nocodedFilePath, encodedFilePath, AES::TEST::Key192::sample1);
+                //AES::ReadDecodeWrite<AES::Key192>(encodedFilePath, decodedFilePath, AES::TEST::Key192::sample1, extraBytes);
+                AES::ReadEncodeWrite<AES::Key256>(extraBytes, nocodedFilePath, encodedFilePath, AES::TEST::Key256::sample1);
+                AES::ReadDecodeWrite<AES::Key256>(encodedFilePath, decodedFilePath, AES::TEST::Key256::sample1, extraBytes);
             }
             
         }

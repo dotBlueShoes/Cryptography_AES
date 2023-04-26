@@ -92,39 +92,30 @@ namespace AES {
 
 	}
 
-	namespace T128 {
-
+	template <typename KeyType>
+	block ExpendKey(
+		OUT uint8* expandedKey,
+		IN const KeyType& key
+	) {
+		aes_key_expansion(key.data(), expandedKey);
 	}
 
-	namespace T192 {
-
+	template <class KeyType>
+	block Encode(
+		OUT Block& encoded,
+		IN const uint8* expandedKey,
+		IN const Block& nocoded
+	) {
+		aes_cipher(nocoded.data(), encoded.data(), expandedKey);
 	}
 
-	namespace T256 {
-
-		block ExpendKey(
-			OUT uint8* expandedKey,
-			IN const AES::Key256& key
-		) {
-			aes_key_expansion(key.data(), expandedKey);
-		}
-
-		block Encode(
-			OUT AES::Block& encoded,
-			IN const uint8* expandedKey,
-			IN const AES::Block& nocoded
-		) {
-			aes_cipher(nocoded.data(), encoded.data(), expandedKey);
-		}
-
-		block Decode(
-			OUT AES::Block& decoded,
-			IN const uint8* expandedKey,
-			IN const AES::Block& encoded
-		) {
-			aes_inv_cipher(encoded.data(), decoded.data(), expandedKey);
-		}
-
+	template <class KeyType>
+	block Decode(
+		OUT Block& decoded,
+		IN const uint8* expandedKey,
+		IN const Block& encoded
+	) {
+		aes_inv_cipher(encoded.data(), decoded.data(), expandedKey);
 	}
 
 }

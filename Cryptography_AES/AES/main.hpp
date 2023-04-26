@@ -126,21 +126,21 @@ namespace Tests {
 		AES::Block encoded, decoded;
 
 		uint8* expandedKey = aes_init(key.size());
-		AES::T256::ExpendKey(expandedKey, key);
+		AES::ExpendKey<AES::Key256>(expandedKey, key);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), nocoded.data(), nocoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_256 LOG_NOCODED, MB_OK);
 		}
 
-		AES::T256::Encode(encoded, expandedKey, nocoded);
+		AES::Encode<AES::Key256>(encoded, expandedKey, nocoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), encoded.data(), encoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_256 LOG_ENCODED, MB_OK);
 		}
 
-		AES::T256::Decode(decoded, expandedKey, encoded);
+		AES::Decode<AES::Key256>(decoded, expandedKey, encoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), decoded.data(), decoded.size());
@@ -151,8 +151,13 @@ namespace Tests {
 	}
 
 	auto ReadWriteTest() {
-		std::vector<byte> readData(FileIO::Read::File(LR"(data/Rozk³ad roku 22_23.pdf)"));
-		FileIO::Write::File(LR"(data/aaa.pdf)", readData.size(), readData.data());
+		//const wchar* const readFilePath = LR"(data/Rozk³ad roku 22_23.pdf)";
+		//const wchar* const writFilePath = LR"(data/aaa.pdf)";
+		const wchar* const readFilePath = LR"(data/1.txt)";
+		const wchar* const writFilePath = LR"(data/2.txt)";
+
+		std::vector<byte> readData(FileIO::Read::File(readFilePath));
+		FileIO::Write::File(writFilePath, readData.size(), readData.data());
 
 		return 0;
 	}
@@ -161,11 +166,12 @@ namespace Tests {
 
 namespace AES {
 
+	template <class KeyType>
 	auto ReadEncodeWrite(
 		OUT  uint8& bytesLeftCount,
 		IN const wchar* const nocodedFilePath,
 		IN const wchar* const encodedFilePath,
-		IN const AES::Key256& key
+		IN const KeyType& key
 	) {
 		std::vector<byte> readData(FileIO::Read::File(nocodedFilePath));
 
@@ -177,15 +183,14 @@ namespace AES {
 		//	array<wchar, 10> buffor;
 		//	Int64ToWString<buffor.size()>(buffor.data(), blocksCount);
 		//	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
-		//	Int64ToWString<buffor.size()>(buffor.data(), leftBytesCount);
+		//	Int64ToWString<buffor.size()>(buffor.data(), bytesLeftCount);
 		//	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
 		//}
 
 		if (bytesLeftCount) { // There is a reminder we need to take care of.
-			const size lastElementPosition = readData.size() - 1;
 			AES::Block lastBlock { 0 };
 			for (uint8 i = 0; i < bytesLeftCount; ++i) {
-				lastBlock[i] = readData[lastElementPosition - bytesLeftCount + i];
+				lastBlock[i] = readData[readData.size() - bytesLeftCount + i];
 			}
 
 			{
@@ -193,7 +198,7 @@ namespace AES {
 				std::ofstream outputFile(encodedFilePath, std::ios::binary);
 
 				uint8* expandedKey = aes_init(key.size());
-				AES::T256::ExpendKey(expandedKey, key);
+				AES::ExpendKey<KeyType>(expandedKey, key);
 
 				// For each Block
 				for (size i = 0; i < blocksCount; ++i) {
@@ -203,7 +208,7 @@ namespace AES {
 						nocoded[j] = readData[(i * 16) + j];
 					}
 
-					AES::T256::Encode(encoded, expandedKey, nocoded);
+					AES::Encode<KeyType>(encoded, expandedKey, nocoded);
 
 					// Write encoded Block
 					for (size j = 0; j < encoded.size(); ++j) {
@@ -213,12 +218,16 @@ namespace AES {
 				}
 
 				// Last block with 0'es
-				AES::T256::Encode(encoded, expandedKey, lastBlock);
-
+				AES::Encode<KeyType>(encoded, expandedKey, lastBlock);
+				
 				// Write encoded lastBlock
-				for (size i = 0; i < lastBlock.size(); ++i) {
-					outputFile << lastBlock[i];
+				for (size i = 0; i < encoded.size(); ++i) {
+					outputFile << encoded[i];
 				}
+
+				//for (uint8 i = 0; i < bytesLeftCount; ++i) {
+				//	outputFile << lastBlock[i];
+				//}
 
 				outputFile.close();
 				free(expandedKey);
@@ -228,10 +237,11 @@ namespace AES {
 		}
 	}
 
+	template <class KeyType>
 	auto ReadDecodeWrite(
 		IN const wchar* const encodedFilePath,
 		IN const wchar* const decodedFilePath,
-		IN const AES::Key256& key,
+		IN const KeyType& key,
 		IN const uint8 bytesLeftCount = 0
 	) {
 		std::vector<byte> readData(FileIO::Read::File(encodedFilePath));
@@ -253,7 +263,10 @@ namespace AES {
 			std::ofstream outputFile(decodedFilePath, std::ios::binary);
 
 			uint8* expandedKey = aes_init(key.size());
-			AES::T256::ExpendKey(expandedKey, key);
+			AES::ExpendKey<KeyType>(expandedKey, key);
+
+			// ! NOPE
+			//outputFile << "\xEF\xBB\xBF";
 
 			// For each Block (exclude last one)
 			for (size i = 0; i < blocksCount - 1; ++i) {
@@ -263,7 +276,7 @@ namespace AES {
 					encoded[j] = readData[(i * 16) + j];
 				}
 
-				AES::T256::Decode(decoded, expandedKey, encoded);
+				AES::Decode<KeyType>(decoded, expandedKey, encoded);
 
 				// Write decoded Block
 				for (size j = 0; j < decoded.size(); ++j) {
@@ -272,15 +285,30 @@ namespace AES {
 
 			}
 
+			
+
 			{ // Last block
 				const size lastBlockPosition = blocksCount - 1;
 
+				//{
+				//	array<wchar, 10> buffor;
+				//	Int64ToWString<buffor.size()>(buffor.data(), readData.size());
+				//	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
+				//	Int64ToWString<buffor.size()>(buffor.data(), (lastBlockPosition * 16) + 15);
+				//	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
+				//}
+			
 				// Copy read data to Block form
 				for (uint8 j = 0; j < 16; ++j) {
 					encoded[j] = readData[(lastBlockPosition * 16) + j];
 				}
-
-				AES::T256::Decode(decoded, expandedKey, encoded);
+			
+				AES::Decode<KeyType>(decoded, expandedKey, encoded);
+			
+				// Copy read data to Block form
+				//for (uint8 j = 0; j < bytesLeftCount; ++j) {
+				//	encoded[j] = readData[(lastBlockPosition * 16) + j];
+				//}
 
 				// Write decoded Block
 				for (size j = 0; j < bytesLeftCount; ++j) {
