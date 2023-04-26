@@ -8,80 +8,89 @@ namespace Windows {
 
 		Windows::Handle tabHandle;
 
+		
+		uint8 tabState = 0;
+
 		/// Must start from 0
-		#define ID_TAB_0 0
-		#define ID_TAB_1 1
-		#define ID_TAB_2 2
+		constexpr auto ID_TAB_0 = 0, ID_TAB_1 = 1, ID_TAB_2 = 2;
+		constexpr auto AES_128 = ID_TAB_0, AES_192 = ID_TAB_1, AES_256 = ID_TAB_2;
 
-		LRESULT CALLBACK Procedure(
-			IN Windows::Handle window,
-			IN UINT message,
-			IN WPARAM wArgument,
-			IN LPARAM lArgument
-		) {
-			switch (message) {
-
-				//case WM_CREATE: {
-				//	DEBUG logger::Info("(CALL) Window-Left:Event-Create");
-				//	return proceeded::True;
-				//}
-
-				case WM_NOTIFY: {
-					LPNMHDR notyfication((LPNMHDR)lArgument);
-					if (notyfication->code == TCN_SELCHANGE) {
-						//if (notyfication->hwndFrom == tabHandle) { /// Sprawdza, czy uchwyt pochodzi od tabHandle
-						const int index(SendMessage(tabHandle, TCM_GETCURSEL, 0, 0)); /// Indeks aktualnej kontrolki, Get Current Selected
-						switch (index) {
-							case ID_TAB_0:
-									//DEBUG logger::Info("(TABEVENT) ID_TAB_0");
-									//ShowWindow( hEdit, SW_SHOW );
-									//ShowWindow( hRadioButton, SW_HIDE );
-								break;
-							case ID_TAB_1:
-									//DEBUG logger::Info("(TABEVENT) ID_TAB_1");
-									//ShowWindow( hEdit, SW_HIDE );
-									//ShowWindow( hRadioButton, SW_SHOW );
-								break;
-									//itd.
-						}
-					}
-				}
-
-				//		} else if (notyfication->hwndFrom == innerTab) {
-				//			const int index(SendMessage(innerTab, TCM_GETCURSEL, 0, 0)); /// Indeks aktualnej kontrolki, Get Current Selected
-				//			switch (index) {
-				//				case ID_TAB_I_0:
-				//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_0");
-				//					//ShowWindow( hEdit, SW_SHOW );
-				//					//ShowWindow( hRadioButton, SW_HIDE );
-				//					break;
-				//				case ID_TAB_I_1:
-				//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_1");
-				//					//ShowWindow( hEdit, SW_HIDE );
-				//					//ShowWindow( hRadioButton, SW_SHOW );
-				//					break;
-				//					//itd.
-				//				case ID_TAB_I_2:
-				//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_2");
-				//					//ShowWindow( hEdit, SW_SHOW );
-				//					//ShowWindow( hRadioButton, SW_HIDE );
-				//					break;
-				//				case ID_TAB_I_3:
-				//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_3");
-				//					//ShowWindow( hEdit, SW_HIDE );
-				//					//ShowWindow( hRadioButton, SW_SHOW );
-				//					break;
-				//					//itd.
-				//			}
-				//		}
-				//	}
-				//	return 0;
-				//}
-
-				default:
-					return DefWindowProcW(window, (uint32)message, wArgument, lArgument);
-			}
-		}
+		//LRESULT CALLBACK Procedure(
+		//	IN Windows::Handle window,
+		//	IN UINT message,
+		//	IN WPARAM wArgument,
+		//	IN LPARAM lArgument
+		//) {
+		//	switch (message) {
+		//
+		//		//case WM_CREATE: {
+		//		//	DEBUG logger::Info("(CALL) Window-Left:Event-Create");
+		//		//	return proceeded::True;
+		//		//}
+		//
+		//		case WM_NOTIFY: {
+		//			LPNMHDR notyfication((LPNMHDR)lArgument);
+		//			MessageBox(nullptr, L"Z", L"TITLE", MB_OK);
+		//			if (notyfication->code == TCN_SELCHANGE) {
+		//				//if (notyfication->hwndFrom == tabHandle) { /// Sprawdza, czy uchwyt pochodzi od tabHandle
+		//				const int index(SendMessage(tabHandle, TCM_GETCURSEL, 0, 0)); /// Indeks aktualnej kontrolki, Get Current Selected
+		//				switch (index) {
+		//
+		//					default:
+		//					case ID_TAB_0: {
+		//						MessageBox(nullptr, L"A", L"TITLE", MB_OK);
+		//						tabState = 0;
+		//					} break;
+		//
+		//					case ID_TAB_1: {
+		//						MessageBox(nullptr, L"B", L"TITLE", MB_OK);
+		//						tabState = 1;
+		//					} break;
+		//
+		//					case ID_TAB_2: {
+		//						MessageBox(nullptr, L"C", L"TITLE", MB_OK);
+		//						tabState = 2;
+		//					}
+		//
+		//				}
+		//			}
+		//		}
+		//
+		//		//		} else if (notyfication->hwndFrom == innerTab) {
+		//		//			const int index(SendMessage(innerTab, TCM_GETCURSEL, 0, 0)); /// Indeks aktualnej kontrolki, Get Current Selected
+		//		//			switch (index) {
+		//		//				case ID_TAB_I_0:
+		//		//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_0");
+		//		//					//ShowWindow( hEdit, SW_SHOW );
+		//		//					//ShowWindow( hRadioButton, SW_HIDE );
+		//		//					break;
+		//		//				case ID_TAB_I_1:
+		//		//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_1");
+		//		//					//ShowWindow( hEdit, SW_HIDE );
+		//		//					//ShowWindow( hRadioButton, SW_SHOW );
+		//		//					break;
+		//		//					//itd.
+		//		//				case ID_TAB_I_2:
+		//		//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_2");
+		//		//					//ShowWindow( hEdit, SW_SHOW );
+		//		//					//ShowWindow( hRadioButton, SW_HIDE );
+		//		//					break;
+		//		//				case ID_TAB_I_3:
+		//		//					DEBUG logger::Info("(TABEVENT) ID_TAB_I_3");
+		//		//					//ShowWindow( hEdit, SW_HIDE );
+		//		//					//ShowWindow( hRadioButton, SW_SHOW );
+		//		//					break;
+		//		//					//itd.
+		//		//			}
+		//		//		}
+		//		//	}
+		//		//	return 0;
+		//		//}
+		//
+		//		default:
+		//			return DefWindowProcW(window, (uint32)message, wArgument, lArgument);
+		//	}
+		//}
 
 		block Create (
 			OUT Windows::Handle& tab,

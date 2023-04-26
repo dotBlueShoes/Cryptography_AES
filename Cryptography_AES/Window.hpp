@@ -1,6 +1,7 @@
 #pragma once
 #include "Framework.hpp"
 #include "Windows/MainTab.hpp"
+#include "AES/main.hpp"
 #include "FileIO.hpp"
 
 #include <RichEdit.h>
@@ -238,7 +239,7 @@ namespace Window {
     block OnButtonConfirmClicked(
         const HWND& windowHandle
     ) {
-        // READ LENGTH
+        // READ INPUT_FIELD LENGTH
         const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
         const size inputStringTerminationPosition = inputFilePathLength + 1;
         const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
@@ -247,13 +248,32 @@ namespace Window {
         wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
         wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
 
-        // READ DATA // !!! check result ???
+        // READ INPUT_FIELD DATA
         SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
         SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
 
         { // PROCESS
-            std::vector<byte> readData(FileIO::Read::File(inputPathBuffor));
-            FileIO::Write::File(outputPathBuffor, readData.size(), readData.data());
+            uint8 bytesLeft;
+
+            switch (Windows::MainTab::tabState) {
+
+                default:
+                case Windows::MainTab::AES_128: {
+                    AES::ReadEncodeWrite<AES::Key128>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key128::sample1);
+                    MessageBox(nullptr, L"Succefully Encrypted [128]", LOG_TYPE, MB_OK);
+                } break;
+
+                case Windows::MainTab::AES_192: {
+                    AES::ReadEncodeWrite<AES::Key192>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key192::sample1);
+                    MessageBox(nullptr, L"Succefully Encrypted [192]", LOG_TYPE, MB_OK);
+                } break;
+
+                case Windows::MainTab::AES_256: {
+                    AES::ReadEncodeWrite<AES::Key256>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key256::sample1);
+                    MessageBox(nullptr, L"Succefully Encrypted [256]", LOG_TYPE, MB_OK);
+                }
+
+            }
         }
 
         delete[] inputPathBuffor;
@@ -316,6 +336,36 @@ namespace Window {
         LPARAM lParam
     ) {
         switch (message) {
+
+            case WM_NOTIFY: {
+                LPNMHDR notyfication((LPNMHDR)lParam);
+                if (notyfication->code == TCN_SELCHANGE) {
+
+                    /// Indeks aktualnej kontrolki, Get Current Selected
+                    const int index(SendMessage(Windows::MainTab::tabHandle, TCM_GETCURSEL, 0, 0)); 
+
+                    switch (index) {
+
+                        default:
+                        case Windows::MainTab::ID_TAB_0: {
+                            //MessageBox(nullptr, L"A", L"DEBUG", MB_OK);
+                            Windows::MainTab::tabState = 0;
+                        } break;
+
+                        case Windows::MainTab::ID_TAB_1: {
+                            //MessageBox(nullptr, L"B", L"DEBUG", MB_OK);
+                            Windows::MainTab::tabState = 1;
+                        } break;
+
+                        case Windows::MainTab::ID_TAB_2: {
+                            //MessageBox(nullptr, L"C", L"DEBUG", MB_OK);
+                            Windows::MainTab::tabState = 2;
+                        }
+
+                    }
+                }
+            }
+
             case WM_COMMAND: {
 
                 int wmId = LOWORD(wParam);

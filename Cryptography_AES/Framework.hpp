@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+
+// WINDOWS - Modern Style - e.g. note for reader for manifest data
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 // WINDOWS
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN             // Wyklucz rzadko używane rzeczy z nagłówków systemu Windows
