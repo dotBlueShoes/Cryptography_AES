@@ -23,6 +23,9 @@ namespace AES {
 	//  + space and coma character 
 	//  for each
 	using BlockWcharBuffor = array<wchar, (16 * 3) + (16 * 2)>;
+	using Key128WcharBuffor = array<wchar, (88 * 3) + (88 * 2)>;
+	using Key196WcharBuffor = array<wchar, (158 * 3) + (158 * 2)>;
+	using Key256WcharBuffor = array<wchar, (240 * 3) + (240 * 2)>;
 
 	namespace TEST {
 
@@ -35,7 +38,7 @@ namespace AES {
 				0x0c, 0x0d, 0x0e, 0x0f
 			};
 
-			const AES::Key128 sample2[] {
+			const AES::Key128 sample2 {
 				0x2b, 0x7e, 0x15, 0x16,
 				0x28, 0xae, 0xd2, 0xa6,
 				0xab, 0xf7, 0x15, 0x88,
@@ -67,7 +70,7 @@ namespace AES {
 
 		namespace Key256 {
 
-			const AES::Key256 sample1 = {
+			const AES::Key256 sample1 {
 				0x60, 0x3d, 0xeb, 0x10,
 				0x15, 0xca, 0x71, 0xbe,
 				0x2b, 0x73, 0xae, 0xf0,
@@ -116,6 +119,18 @@ namespace AES {
 		IN const Block& encoded
 	) {
 		aes_inv_cipher(encoded.data(), decoded.data(), expandedKey);
+	}
+
+	template <class KeyType>
+	block WcharsToKey(
+		OUT KeyType& key,
+		IN const wchar* const buffor,
+		IN const size& bufforCount
+	) {
+		for (size i = 0; i < bufforCount; i += 2) {
+			key[i] = (uint8)(buffor[i]);
+			key[i + 1] = (uint8)(buffor[i] >> 8);
+		}
 	}
 
 }

@@ -162,6 +162,30 @@ namespace Tests {
 		return 0;
 	}
 
+	auto WcharByteTest(
+		//IN const wchar& wValue,
+		//IN const byte& bValue
+	) {
+		
+		const byte bValue1 = 0b00001000, bValue2 = 0b00000100;
+		const wchar wValue1 = 0b0000'1000'0000'0100;
+		const wchar wValue2 = 0b0000'0100'0000'1000;
+		wchar wValue = 0;
+
+		wValue = bValue1;
+		wValue <<= 8;
+		wValue += bValue2;
+
+		if (wValue == wValue1) {
+			MessageBox(nullptr, L"1", LOG_TYPE, MB_OK);
+		} else if (wValue == wValue2) {
+			MessageBox(nullptr, L"2", LOG_TYPE, MB_OK);
+		} else {
+			MessageBox(nullptr, L"3", LOG_TYPE, MB_OK);
+		}
+		
+	}
+
 }
 
 namespace AES {
@@ -187,53 +211,96 @@ namespace AES {
 
 				// Initialize the whole block with 0'es so we don't do that with for-loop later.
 				AES::Block lastBlock { 0 };
+				uint8 count = 0;
 
-				for (uint8 i = 0; i < bytesLeftCount; ++i) {
-					lastBlock[i] = strNocoded[strNocodedCount - bytesLeftCount + i];
+				for (uint8 i = 0; i < bytesLeftCount / 2; ++i) {
+					lastBlock[count] = (uint8)(strNocoded[(strNocodedCount - bytesLeftCount) / 2 + i] << 8); // high
+					lastBlock[count + 1] = (uint8)(strNocoded[(strNocodedCount - bytesLeftCount) / 2 + i]);  // low
+					count += 2;
 				}
 
 				{
 					AES::Block nocoded, encoded;
-					//std::ofstream outputFile(encodedFilePath, std::ios::binary);
-
 					uint8* expandedKey = aes_init(key.size());
+
 					AES::ExpendKey<KeyType>(expandedKey, key);
+
+					//{
+					//	AES::Key128WcharBuffor buffor;
+					//	BytesToWString<buffor.size()>(buffor.data(), expandedKey, 88);
+					//	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
+					//}
 
 					// For each Block
 					for (size i = 0; i < blocksCount; ++i) {
 
 						// Copy read data to Block form
-						for (uint8 j = 0; j < 16; ++j) {
-							nocoded[j] = strNocoded[(i * 16) + j];
+						count = 0;
+						for (uint8 j = 0; j < 8 /* wchars... /2 */; ++j) {
+							nocoded[count] = (uint8)(strNocoded[(i * 8) + j] << 8); // high
+							nocoded[count + 1] = (uint8)(strNocoded[(i * 8) + j]);  // low
+							count += 2;
 						}
 
 						AES::Encode<KeyType>(encoded, expandedKey, nocoded);
 
 						// Write encoded Block
-						for (size j = 0; j < encoded.size(); ++j) {
-							strEncoded[(blocksCount * 16) + j] = encoded[j];
+						count = 0;
+						for (size j = 0; j < encoded.size() / 2; ++j) {
+							wchar temp = encoded[count];
+							temp <<= 8;
+							temp += encoded[count + 1];
+
+							strEncoded[(i * 8) + j] = temp;
+							count += 2;
+						}
+
+						// Again for those left 8 wchars
+
+						// Copy read data to Block form
+						count = 0;
+						for (uint8 j = 0; j < 8 /* wchars... /2 */; ++j) {
+							nocoded[count] = (uint8)(strNocoded[(i * 8) + j + 8] << 8); // high
+							nocoded[count + 1] = (uint8)(strNocoded[(i * 8) + j + 8]);  // low
+							count += 2;
+						}
+
+						AES::Encode<KeyType>(encoded, expandedKey, nocoded);
+
+						// Write encoded Block
+						count = 0;
+						for (size j = 0; j < encoded.size() / 2; ++j) {
+							wchar temp = encoded[count];
+							temp <<= 8;
+							temp += encoded[count + 1];
+
+							strEncoded[(i * 8) + j + 8] = temp;
+							count += 2;
 						}
 
 					}
 
 					// Last block with 0'es
 					AES::Encode<KeyType>(encoded, expandedKey, lastBlock);
-
+					
 					// Write encoded lastBlock
-					for (size i = 0; i < encoded.size(); ++i) {
-						strEncoded[i] = encoded[i];
+					uint8 count = 0;
+					for (size i = 0; i < encoded.size() / 2; ++i) {
+						wchar temp = encoded[count];
+						temp <<= 8;
+						temp += encoded[count + 1];
+					
+						strEncoded[(blocksCount * 8) + i] = temp;
+						count += 2;
 					}
 
+					// Maybe ? 
 					//for (size i = 0; i < bytesLeftCount; ++i) {
 					//	strEncoded[i] = encoded[i];
 					//}
 
 					free(expandedKey);
 				}
-			//} else { // leftBytesCount == 0;
-			//	
-			//	// Enumerate though all blocks
-			//}
 
 		}
 	}
@@ -248,7 +315,7 @@ namespace AES {
 	) {
 		// Likely uses the result of the division - single DIV instruction.
 		const uint64 blocksCount = strEncodedCount / 16;
-		const uint64 leftBytesCount = strEncodedCount % 16;
+		//const uint64 leftBytesCount = strEncodedCount % 16;
 
 		{
 
@@ -263,32 +330,73 @@ namespace AES {
 				for (size i = 0; i < blocksCount - 1; ++i) {
 
 					// Copy read data to Block form
-					for (uint8 j = 0; j < 16; ++j) {
-						encoded[j] = strEncoded[(i * 16) + j];
+					uint8 count = 0;
+					for (uint8 j = 0; j < 8; ++j) {
+						encoded[count] = (uint8)(strEncoded[(i * 8) + j] >> 8); // high
+						encoded[count + 1] = (uint8)(strEncoded[(i * 8) + j]);  // low
+						count += 2;
 					}
 
 					AES::Decode<KeyType>(decoded, expandedKey, encoded);
 
 					// Write decoded Block
-					for (size j = 0; j < decoded.size(); ++j) {
-						strDecoded[(i * 16) + j] = decoded[j];
+					count = 0;
+					for (size j = 0; j < decoded.size() / 2; ++j) {
+						wchar temp = decoded[count];
+						temp <<= 8;
+						temp += decoded[count + 1];
+
+						strDecoded[(i * 8) + j] = temp;
+						count += 2;
 					}
+
+					// Again for those 8 next wchars
+
+					//// Copy read data to Block form
+					//count = 0;
+					//for (uint8 j = 0; j < 8; ++j) {
+					//	encoded[count] = (uint8)(strEncoded[(i * 8) + j + 8] >> 8); // high
+					//	encoded[count + 1] = (uint8)(strEncoded[(i * 8) + j + 8]);  // low
+					//	count += 2;
+					//}
+					//
+					//AES::Decode<KeyType>(decoded, expandedKey, encoded);
+					//
+					//// Write decoded Block
+					//count = 0;
+					//for (size j = 0; j < decoded.size() / 2; ++j) {
+					//	wchar temp = decoded[count];
+					//	temp <<= 8;
+					//	temp += decoded[count + 1];
+					//
+					//	strDecoded[(i * 8) + j + 8] = temp;
+					//	count += 2;
+					//}
 
 				}
 
 				{ // Last block
 					const size lastBlockPosition = blocksCount - 1;
-
+				
 					// Copy read data to Block form
-					for (uint8 j = 0; j < 16; ++j) {
-						encoded[j] = strEncoded[(lastBlockPosition * 16) + j];
+					uint8 count = 0;
+					for (uint8 j = 0; j < 8; ++j) {
+						encoded[count] = (byte)(strEncoded[(lastBlockPosition * 8) + j] >> 8);	// high
+						encoded[count + 1] = (byte)(strEncoded[(lastBlockPosition * 8) + j]);	// low
+						count += 2;
 					}
-
+				
 					AES::Decode<KeyType>(decoded, expandedKey, encoded);
-
+				
 					// Write decoded Block
-					for (size j = 0; j < bytesLeftCount; ++j) {
-						strDecoded[(lastBlockPosition * 16) + j] = decoded[j];
+					count = 0;
+					for (size j = 0; j < bytesLeftCount / 2; ++j) {
+						wchar temp = decoded[count];
+						temp <<= 8;
+						temp += decoded[count + 1];
+				
+						strDecoded[(lastBlockPosition * 8) + j] = temp;
+						count += 2;
 					}
 				}
 

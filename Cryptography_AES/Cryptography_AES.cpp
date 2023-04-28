@@ -29,16 +29,24 @@ int32 APIENTRY wWinMain (
         { // TESTS
 
             //{ // Single Block
-            //    const AES::Block nocoded {
-            //        0x00, 0x11, 0x22, 0x33,
-            //        0x44, 0x55, 0x66, 0x77,
-            //        0x88, 0x99, 0xaa, 0xbb,
-            //        0xcc, 0xdd, 0xee, 0xff
-            //    };
-            //    
-            //    Tests::Test128(AES::TEST::Key128::sample1, nocoded);
-            //    Tests::Test192(AES::TEST::Key192::sample1, nocoded);
-            //    Tests::Test256(AES::TEST::Key256::sample1, nocoded);
+
+            const AES::Key128 testKey {
+                0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+                0x00, 0x09, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x0f
+            };
+                const AES::Block nocoded {
+                    0x00, 0x11, 0x22, 0x33,
+                    0x44, 0x55, 0x66, 0x77,
+                    0x88, 0x99, 0xaa, 0xbb,
+                    0xcc, 0xdd, 0xee, 0xff
+                };
+                
+                Tests::WcharByteTest();
+                Tests::Test128(testKey, nocoded);
+                //Tests::Test192(AES::TEST::Key192::sample1, nocoded);
+                //Tests::Test256(AES::TEST::Key256::sample1, nocoded);
             //}
 
             // No encoding decoding.

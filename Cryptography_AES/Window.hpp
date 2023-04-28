@@ -11,6 +11,20 @@
 
 //#pragma comment(lib, MSFTEDIT_DLL_PATH) // - we do LoadLibrary now
 
+const AES::Key128 testKey {
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x09, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x0f
+};
+
+//const AES::Key128 testKey {
+//    0x00, 0x01, 0x02, 0x03,
+//    0x04, 0x05, 0x06, 0x07,
+//    0x08, 0x09, 0x0a, 0x0b,
+//    0x0c, 0x0d, 0x0e, 0x0f
+//};
+
 namespace Window {
 
     // PREDEFINED FUNCTIONS
@@ -350,7 +364,7 @@ namespace Window {
                 default:
                 case Windows::MainTab::AES_128: {
                     // wcharstring to Key128, Key192, Key256
-                    AES::ReadDecodeWrite<AES::Key128>(inputPathBuffor, outputPathBuffor, AES::TEST::Key128::sample1, aesBytesLeftPath);
+                    AES::ReadDecodeWrite<AES::Key128>(inputPathBuffor, outputPathBuffor, testKey, aesBytesLeftPath);
                     MessageBox(nullptr, L"Succefully Decrypted [128]", LOG_TYPE, MB_OK);
                 } break;
 
@@ -379,15 +393,32 @@ namespace Window {
         // READ LENGTH
         const size inputLength = SendMessageW(reInput, WM_GETTEXTLENGTH, NULL, NULL);
         const size inputStringTerminationPosition = inputLength + 1;
+        const size keyValueLength = SendMessageW(reKey, WM_GETTEXTLENGTH, NULL, NULL);
+        const size keyStringTerminationPosition = keyValueLength + 1;
+
+        if (keyValueLength > 8) {
+            MessageBox(nullptr, L"Key is to long!", LOG_TYPE, MB_OK);
+            return;
+        }
 
         wchar* inputBuffor = new wchar[inputStringTerminationPosition];
+        wchar* keyBuffor = new wchar[keyStringTerminationPosition];
 
-        const uint64 blocksCount = inputLength / 16;
-        const uint64 outputCount = (blocksCount * 16) + 16;
+        // OUTPUT BUFFOR NECESSITIES
+        const uint64 inputBytesLength = inputLength * 2;
+        const uint64 blocksCount = inputBytesLength / 16;
+        uint64 outputCount;
+
+        if (inputBytesLength % 16 == 0)
+            outputCount = (blocksCount * 8);
+        else
+            outputCount = (blocksCount * 8) + 8;
+        
         wchar* outputBuffor = new wchar[outputCount + 1 /* null-termination*/];
 
         // READ DATA
         SendMessageW(reInput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
+        SendMessageW(reKey, WM_GETTEXT, keyStringTerminationPosition, (LPARAM)keyBuffor);
 
         { // PROCESS
             switch (Windows::MainTab::tabState) {
@@ -395,22 +426,25 @@ namespace Window {
                 default:
                 case Windows::MainTab::AES_128: {
                     // wcharstring to Key128, Key192, Key256
-                    AES::ReadEncodeWrite<AES::Key128>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key128::sample1);
+
+                    AES::Key128 key { 0 };
+                    AES::WcharsToKey(key, keyBuffor, keyValueLength * 2);
+                    AES::ReadEncodeWrite<AES::Key128>(aesBytesLeft, outputBuffor, inputBuffor, inputBytesLength, testKey);
                     //{
-                    //	array<wchar, 10> buffor;
-                    //	Int64ToWString<buffor.size()>(buffor.data(), inputLength);
+                    //    array<wchar, 10> buffor;
+                    //	Int64ToWString<buffor.size()>(buffor.data(), aesBytesLeft);
                     //	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
                     //}
                     //MessageBox(nullptr, L"Succefully Encrypted [128]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_192: {
-                    AES::ReadEncodeWrite<AES::Key192>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key192::sample1);
+                    AES::ReadEncodeWrite<AES::Key192>(aesBytesLeft, outputBuffor, inputBuffor, inputBytesLength, AES::TEST::Key192::sample1);
                     //MessageBox(nullptr, L"Succefully Encrypted [192]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_256: {
-                    AES::ReadEncodeWrite<AES::Key256>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key256::sample1);
+                    AES::ReadEncodeWrite<AES::Key256>(aesBytesLeft, outputBuffor, inputBuffor, inputBytesLength, AES::TEST::Key256::sample1);
                     //MessageBox(nullptr, L"Succefully Encrypted [256]", LOG_TYPE, MB_OK);
                 }
 
@@ -430,15 +464,27 @@ namespace Window {
         // READ LENGTH
         const size inputLength = SendMessageW(reOutput, WM_GETTEXTLENGTH, NULL, NULL);
         const size inputStringTerminationPosition = inputLength + 1;
+        const size keyValueLength = SendMessageW(reKey, WM_GETTEXTLENGTH, NULL, NULL);
+        const size keyStringTerminationPosition = keyValueLength + 1;
+
+        if (keyValueLength > 8) {
+            MessageBox(nullptr, L"Key is to long!", LOG_TYPE, MB_OK);
+            return;
+        }
 
         wchar* inputBuffor = new wchar[inputStringTerminationPosition];
+        wchar* keyBuffor = new wchar[keyStringTerminationPosition];
 
-        const uint64 blocksCount = inputLength / 16;
-        const uint64 outputCount = ((blocksCount - 1) * 16) + aesBytesLeft;
+        // OUTPUT BUFFOR NECESSITIES
+        const uint64 inputBytesLength = inputLength * 2;
+        const uint64 blocksCount = inputBytesLength / 16; 
+        // Here we are sure we're given the whole block eg. 8 wchars.
+        const uint64 outputCount = ((blocksCount - 1) * 8) + (aesBytesLeft / 2);
         wchar* outputBuffor = new wchar[outputCount + 1 /* null-termination*/];
 
         // READ DATA
         SendMessageW(reOutput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
+        SendMessageW(reKey, WM_GETTEXT, keyStringTerminationPosition, (LPARAM)keyBuffor);
 
         { // PROCESS
             switch (Windows::MainTab::tabState) {
@@ -446,17 +492,19 @@ namespace Window {
                 default:
                 case Windows::MainTab::AES_128: {
                     // wcharstring to Key128, Key192, Key256
-                    AES::ReadDecodeWrite<AES::Key128>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key128::sample1, aesBytesLeft);
+                    AES::Key128 key { 0 };
+                    AES::WcharsToKey(key, keyBuffor, keyValueLength * 2);
+                    AES::ReadDecodeWrite<AES::Key128>(outputBuffor, inputBuffor, inputBytesLength, testKey, aesBytesLeft);
                     //MessageBox(nullptr, L"Succefully Decrypted [128]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_192: {
-                    AES::ReadDecodeWrite<AES::Key192>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key192::sample1, aesBytesLeft);
+                    AES::ReadDecodeWrite<AES::Key192>(outputBuffor, inputBuffor, inputBytesLength, AES::TEST::Key192::sample1, aesBytesLeft);
                     //MessageBox(nullptr, L"Succefully Decrypted [192]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_256: {
-                    AES::ReadDecodeWrite<AES::Key256>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key256::sample1, aesBytesLeft);
+                    AES::ReadDecodeWrite<AES::Key256>(outputBuffor, inputBuffor, inputBytesLength, AES::TEST::Key256::sample1, aesBytesLeft);
                     //MessageBox(nullptr, L"Succefully Decrypted [256]", LOG_TYPE, MB_OK);
                 }
 
@@ -468,6 +516,7 @@ namespace Window {
 
         delete[] inputBuffor;
         delete[] outputBuffor;
+        delete[] keyBuffor;
     }
 
     LRESULT CALLBACK WndProc(
