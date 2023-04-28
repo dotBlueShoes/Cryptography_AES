@@ -21,7 +21,7 @@ int32 APIENTRY wWinMain (
     }
 
     { // Window Creation.
-        const pair<int32> windowPosition { CW_USEDEFAULT, 0 }, windowArea { 1000, 500 };
+        const pair<int32> windowPosition { CW_USEDEFAULT, 0 }, windowArea { 1000, 600 };
 
         Window::MyRegisterClass(process, classNameMainWindow);
         if (!Window::InitInstance(process, nCmdShow, classNameMainWindow, titleMainWindow, windowPosition, windowArea)) return FALSE;

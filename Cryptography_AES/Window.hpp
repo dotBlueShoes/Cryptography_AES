@@ -20,7 +20,7 @@ namespace Window {
 
     // GLOBALS
     HINSTANCE currentProcess;
-    HWND buttonConfirmIO, buttonEncode, buttonDecode,
+    HWND buttonEncodePath, buttonDecodePath, buttonEncode, buttonDecode,
         reInputPath, reOutputPath, reInput, reOutput;
 
     block LoadRichEdit() { LoadLibrary(TEXT(MSFTEDIT_DLL_PATH)); }
@@ -143,7 +143,10 @@ namespace Window {
 
                 const pair<int32> tabPosition { 0, 0 };
                 const pair<int32> tabStyleOffset { 16, 26 }; // this should be related to nonClientAreaOffset and tabXOffset... fix it later...
-                const pair<int32> tabArea { windowArea.x - tabStyleOffset.x, windowArea.y - tabStyleOffset.y - 13 };
+                const pair<int32> tabArea { 
+                    windowArea.x - tabStyleOffset.x + 2 /* to hide bottom line */, 
+                    windowArea.y - tabStyleOffset.y - 13 + 2 /* to hide bottom line */ 
+                };
                 const int32 tabXOffset = 24;
 
                 Windows::MainTab::Create (
@@ -159,44 +162,77 @@ namespace Window {
                     // Different windows styles 7,8,10 and such have their own nonClientArea.
                     //  for shoutcut this is how it should be on windows 10.
                     const pair<int32> nonClientAreaOffset { 15, 28 };
-                
                     const pair<int32>
-                        positionWindowFile { 10, 0 + tabXOffset },
-                        areaWindowFile { windowArea.x - 20 - nonClientAreaOffset.x, 60 },
-                        positionWindowText { 10, areaWindowFile.y + tabXOffset },
-                        areaWindowText { windowArea.x - 20 - nonClientAreaOffset.x, windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y - tabStyleOffset.y };
+                        keyPosition { 20 + 40 + 10, 10 + tabXOffset },
+                        keyArea { 870 + 37, 24 };
                 
+                    { // Key Value
+
+                        const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
+
+                        const wchar
+                            * preText = L"Key";
+
+                        /* Text creation */
+                        CreateWindow(L"STATIC", L"Key :", WS_VISIBLE | WS_CHILD | SS_LEFT, 20, 10 + tabXOffset + 3, 100, 100, windowHandle, nullptr, process, nullptr);
+                        /*reKey = */ CreateRichEdit(process, windowHandle, keyPosition, keyArea, singleLineStyle, preText);
+                    }
+
+                    const pair<int32>
+                        positionWindowFile { 10, keyPosition.y + keyArea.y + 10 },
+                        areaWindowFile { 
+                            windowArea.x - 20 - nonClientAreaOffset.x, 
+                            60 + 60 + 24 
+                        },
+                        positionWindowText { 10, positionWindowFile.y + areaWindowFile.y },
+                        areaWindowText {
+                            windowArea.x - 20 - nonClientAreaOffset.x,
+                            windowArea.y - 20 - nonClientAreaOffset.y - areaWindowFile.y - positionWindowFile.y
+                    };
+
                     const wchar* captionRegionFile = L"File", * captionRegionText = L"Text";
-                
+
                     CreateGroupBox(process, windowHandle, positionWindowFile, areaWindowFile, captionRegionFile);
                     CreateGroupBox(process, windowHandle, positionWindowText, areaWindowText, captionRegionText);
-                
+
                     { // File Windows
                 
                         const pair<int32>
-                            positionInputFile { 20, 20 + tabXOffset }, areaInputFile { 400, 24 + 4 },
-                            positionOutputFile { 20 + areaInputFile.x + 10, 20 + tabXOffset }, areaOutputFile { 400, 24 + 4 },
-                            positionConfirm { areaOutputFile.x + positionOutputFile.x + 10, 20 + tabXOffset }, areaConfirm { 100, 24 + 4 };
+                            positionInputFile { 20, positionWindowFile.y + 20 },
+                            areaInputFile { 810, 24 + 10 + 18 },
+                            positionOutputFile { 20, positionInputFile.y + areaInputFile.y + 10 },
+                            areaOutputFile { 810, 24 + 10 + 18 },
+                            positionEncode { areaOutputFile.x + positionOutputFile.x + 10, positionInputFile.y },
+                            areaEncode { 100, 24 + 4 },
+                            positionDecode { areaOutputFile.x + positionOutputFile.x + 10, positionEncode.y + areaEncode.y + 10 },
+                            areaDecode { 100, 24 + 4 };
                 
                         const uint32 singleLineStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP;
                 
                         const wchar
                             * inputPreText = L"Input file path",
                             * outputPreText = L"Output file path",
-                            * confirmText = L"Confirm";
+                            * encodeText = L"Encode",
+                            * decodeText = L"Encode";
                 
                         reInputPath = CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
                         reOutputPath = CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
-                        buttonConfirmIO = CreateButton(process, windowHandle, positionConfirm, areaConfirm, confirmText);
+
+                        // Show Horizontal Scrollbar
+                        SendMessageW(reInputPath, EM_SHOWSCROLLBAR, SB_HORZ, TRUE);
+                        SendMessageW(reOutputPath, EM_SHOWSCROLLBAR, SB_HORZ, TRUE);
+
+                        buttonEncodePath = CreateButton(process, windowHandle, positionEncode, areaEncode, encodeText);
+                        buttonDecodePath = CreateButton(process, windowHandle, positionDecode, areaDecode, decodeText);
                     }
                 
                     { // Text Windows
                 
                         const pair<int32>
                             positionInput { 20, positionWindowText.y + 20 },
-                            areaInput { 400, areaWindowText.y - 20 - 10 - tabStyleOffset.y },
-                            positionOutput { positionInput.x + areaInput.x + 10, positionWindowText.y + 20 },
-                            areaOutput { 400, areaWindowText.y - 20 - 10 - tabStyleOffset.y },
+                            areaInput { 400, areaWindowText.y - 20 - 10  },
+                            positionOutput { positionInput.x + areaInput.x + 10, positionInput.y },
+                            areaOutput { 400, areaWindowText.y - 20 - 10 },
                             positionEncode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 },
                             areaEncode { 100, 28 },
                             positionDecode { positionOutput.x + areaOutput.x + 10, positionWindowText.y + 20 + areaEncode.y + 10 },
@@ -214,7 +250,7 @@ namespace Window {
                         reInput = CreateRichEdit(process, windowHandle, positionInput, areaInput, multiLineStyle, inputPreText);
                         reOutput = CreateRichEdit(process, windowHandle, positionOutput, areaOutput, multiLineStyle, outputPreText);
                 
-                        // Show Scrollbar
+                        // Show Vertical Scrollbar
                         SendMessageW(reInput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
                         SendMessageW(reOutput, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
                 
@@ -371,8 +407,9 @@ namespace Window {
                 int wmId = LOWORD(wParam);
                 auto id = (HWND)lParam;
 
-                if (id == buttonConfirmIO) {
+                if (id == buttonEncodePath) {
                     OnButtonConfirmClicked(windowHandle);
+                } else if (id == buttonDecodePath){
                 } else if (id == buttonEncode) {
                     OnButtonEncodeClick(windowHandle);
                 } else if (id == buttonDecode) {
