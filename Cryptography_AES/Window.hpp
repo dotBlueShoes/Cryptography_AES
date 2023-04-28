@@ -21,7 +21,9 @@ namespace Window {
     // GLOBALS
     HINSTANCE currentProcess;
     HWND buttonEncodePath, buttonDecodePath, buttonEncode, buttonDecode,
-        reInputPath, reOutputPath, reInput, reOutput;
+        reKey, reInputPath, reOutputPath, reInput, reOutput;
+
+    uint8 aesBytesLeftPath, aesBytesLeft;
 
     block LoadRichEdit() { LoadLibrary(TEXT(MSFTEDIT_DLL_PATH)); }
 
@@ -175,7 +177,7 @@ namespace Window {
 
                         /* Text creation */
                         CreateWindow(L"STATIC", L"Key :", WS_VISIBLE | WS_CHILD | SS_LEFT, 20, 10 + tabXOffset + 3, 100, 100, windowHandle, nullptr, process, nullptr);
-                        /*reKey = */ CreateRichEdit(process, windowHandle, keyPosition, keyArea, singleLineStyle, preText);
+                        reKey = CreateRichEdit(process, windowHandle, keyPosition, keyArea, singleLineStyle, preText);
                     }
 
                     const pair<int32>
@@ -213,7 +215,7 @@ namespace Window {
                             * inputPreText = L"Input file path",
                             * outputPreText = L"Output file path",
                             * encodeText = L"Encode",
-                            * decodeText = L"Encode";
+                            * decodeText = L"Decode";
                 
                         reInputPath = CreateRichEdit(process, windowHandle, positionInputFile, areaInputFile, singleLineStyle, inputPreText);
                         reOutputPath = CreateRichEdit(process, windowHandle, positionOutputFile, areaOutputFile, singleLineStyle, outputPreText);
@@ -272,40 +274,44 @@ namespace Window {
         return TRUE;
     }
 
-    block OnButtonConfirmClicked(
+    block OnButtonEncodePathClicked(
         const HWND& windowHandle
     ) {
+
         // READ INPUT_FIELD LENGTH
         const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
         const size inputStringTerminationPosition = inputFilePathLength + 1;
         const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
         const size outputStringTerminationPosition = outputFilePathLength + 1;
+        const size keyValueLength = SendMessageW(reKey, WM_GETTEXTLENGTH, NULL, NULL);
+        const size keyStringTerminationPosition = keyValueLength + 1;
 
         wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
         wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
+        wchar* keyBuffor = new wchar[keyStringTerminationPosition];
 
         // READ INPUT_FIELD DATA
         SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
         SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
+        SendMessageW(reKey, WM_GETTEXT, keyStringTerminationPosition, (LPARAM)keyBuffor);
 
         { // PROCESS
-            uint8 bytesLeft;
-
             switch (Windows::MainTab::tabState) {
 
                 default:
                 case Windows::MainTab::AES_128: {
-                    AES::ReadEncodeWrite<AES::Key128>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key128::sample1);
+                    // wcharstring to Key128, Key192, Key256
+                    AES::ReadEncodeWrite<AES::Key128>(aesBytesLeftPath, inputPathBuffor, outputPathBuffor, AES::TEST::Key128::sample1);
                     MessageBox(nullptr, L"Succefully Encrypted [128]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_192: {
-                    AES::ReadEncodeWrite<AES::Key192>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key192::sample1);
+                    AES::ReadEncodeWrite<AES::Key192>(aesBytesLeftPath, inputPathBuffor, outputPathBuffor, AES::TEST::Key192::sample1);
                     MessageBox(nullptr, L"Succefully Encrypted [192]", LOG_TYPE, MB_OK);
                 } break;
 
                 case Windows::MainTab::AES_256: {
-                    AES::ReadEncodeWrite<AES::Key256>(bytesLeft, inputPathBuffor, outputPathBuffor, AES::TEST::Key256::sample1);
+                    AES::ReadEncodeWrite<AES::Key256>(aesBytesLeftPath, inputPathBuffor, outputPathBuffor, AES::TEST::Key256::sample1);
                     MessageBox(nullptr, L"Succefully Encrypted [256]", LOG_TYPE, MB_OK);
                 }
 
@@ -314,6 +320,56 @@ namespace Window {
 
         delete[] inputPathBuffor;
         delete[] outputPathBuffor;
+        delete[] keyBuffor;
+    }
+
+    block OnButtonDecodePathClicked(
+        const HWND& windowHandle
+    ) {
+
+        // READ INPUT_FIELD LENGTH
+        const size inputFilePathLength = SendMessageW(reInputPath, WM_GETTEXTLENGTH, NULL, NULL);
+        const size inputStringTerminationPosition = inputFilePathLength + 1;
+        const size outputFilePathLength = SendMessageW(reOutputPath, WM_GETTEXTLENGTH, NULL, NULL);
+        const size outputStringTerminationPosition = outputFilePathLength + 1;
+        const size keyValueLength = SendMessageW(reKey, WM_GETTEXTLENGTH, NULL, NULL);
+        const size keyStringTerminationPosition = keyValueLength + 1;
+
+        wchar* inputPathBuffor = new wchar[inputStringTerminationPosition];
+        wchar* outputPathBuffor = new wchar[outputStringTerminationPosition];
+        wchar* keyBuffor = new wchar[keyStringTerminationPosition];
+
+        // READ INPUT_FIELD DATA
+        SendMessageW(reInputPath, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputPathBuffor);
+        SendMessageW(reOutputPath, WM_GETTEXT, outputStringTerminationPosition, (LPARAM)outputPathBuffor);
+        SendMessageW(reKey, WM_GETTEXT, keyStringTerminationPosition, (LPARAM)keyBuffor);
+
+        { // PROCESS
+            switch (Windows::MainTab::tabState) {
+
+                default:
+                case Windows::MainTab::AES_128: {
+                    // wcharstring to Key128, Key192, Key256
+                    AES::ReadDecodeWrite<AES::Key128>(inputPathBuffor, outputPathBuffor, AES::TEST::Key128::sample1, aesBytesLeftPath);
+                    MessageBox(nullptr, L"Succefully Decrypted [128]", LOG_TYPE, MB_OK);
+                } break;
+
+                case Windows::MainTab::AES_192: {
+                    AES::ReadDecodeWrite<AES::Key192>(inputPathBuffor, outputPathBuffor, AES::TEST::Key192::sample1, aesBytesLeftPath);
+                    MessageBox(nullptr, L"Succefully Decrypted [192]", LOG_TYPE, MB_OK);
+                } break;
+
+                case Windows::MainTab::AES_256: {
+                    AES::ReadDecodeWrite<AES::Key256>(inputPathBuffor, outputPathBuffor, AES::TEST::Key256::sample1, aesBytesLeftPath);
+                    MessageBox(nullptr, L"Succefully Decrypted [256]", LOG_TYPE, MB_OK);
+                }
+
+            }
+        }
+
+        delete[] inputPathBuffor;
+        delete[] outputPathBuffor;
+        delete[] keyBuffor;
     }
 
     block OnButtonEncodeClick(
@@ -326,20 +382,46 @@ namespace Window {
 
         wchar* inputBuffor = new wchar[inputStringTerminationPosition];
 
+        const uint64 blocksCount = inputLength / 16;
+        const uint64 outputCount = (blocksCount * 16) + 16;
+        wchar* outputBuffor = new wchar[outputCount + 1 /* null-termination*/];
+
         // READ DATA
         SendMessageW(reInput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
 
         { // PROCESS
-            wchar* outputBuffer = inputBuffor;
+            switch (Windows::MainTab::tabState) {
 
-            SendMessageW(reOutput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
+                default:
+                case Windows::MainTab::AES_128: {
+                    // wcharstring to Key128, Key192, Key256
+                    AES::ReadEncodeWrite<AES::Key128>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key128::sample1);
+                    //{
+                    //	array<wchar, 10> buffor;
+                    //	Int64ToWString<buffor.size()>(buffor.data(), inputLength);
+                    //	MessageBox(nullptr, buffor.data(), LOG_TYPE, MB_OK);
+                    //}
+                    //MessageBox(nullptr, L"Succefully Encrypted [128]", LOG_TYPE, MB_OK);
+                } break;
 
-            
+                case Windows::MainTab::AES_192: {
+                    AES::ReadEncodeWrite<AES::Key192>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key192::sample1);
+                    //MessageBox(nullptr, L"Succefully Encrypted [192]", LOG_TYPE, MB_OK);
+                } break;
+
+                case Windows::MainTab::AES_256: {
+                    AES::ReadEncodeWrite<AES::Key256>(aesBytesLeft, outputBuffor, inputBuffor, inputLength, AES::TEST::Key256::sample1);
+                    //MessageBox(nullptr, L"Succefully Encrypted [256]", LOG_TYPE, MB_OK);
+                }
+
+            }
+
+            outputBuffor[outputCount] = L'\0';
+            SendMessageW(reOutput, WM_SETTEXT, NULL, (LPARAM)outputBuffor);
         }
 
         delete[] inputBuffor;
-
-        //MessageBox(windowHandle, inputBuffor, L"Nacisn¹³eœ przycisk!", MB_ICONINFORMATION);
+        delete[] outputBuffor;
     }
 
     block OnButtonDecodeClick(
@@ -351,18 +433,41 @@ namespace Window {
 
         wchar* inputBuffor = new wchar[inputStringTerminationPosition];
 
+        const uint64 blocksCount = inputLength / 16;
+        const uint64 outputCount = ((blocksCount - 1) * 16) + aesBytesLeft;
+        wchar* outputBuffor = new wchar[outputCount + 1 /* null-termination*/];
+
         // READ DATA
         SendMessageW(reOutput, WM_GETTEXT, inputStringTerminationPosition, (LPARAM)inputBuffor);
 
         { // PROCESS
-            wchar* outputBuffer = inputBuffor;
+            switch (Windows::MainTab::tabState) {
 
-            SendMessageW(reInput, WM_SETTEXT, NULL, (LPARAM)outputBuffer);
+                default:
+                case Windows::MainTab::AES_128: {
+                    // wcharstring to Key128, Key192, Key256
+                    AES::ReadDecodeWrite<AES::Key128>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key128::sample1, aesBytesLeft);
+                    //MessageBox(nullptr, L"Succefully Decrypted [128]", LOG_TYPE, MB_OK);
+                } break;
 
+                case Windows::MainTab::AES_192: {
+                    AES::ReadDecodeWrite<AES::Key192>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key192::sample1, aesBytesLeft);
+                    //MessageBox(nullptr, L"Succefully Decrypted [192]", LOG_TYPE, MB_OK);
+                } break;
 
+                case Windows::MainTab::AES_256: {
+                    AES::ReadDecodeWrite<AES::Key256>(outputBuffor, inputBuffor, inputLength, AES::TEST::Key256::sample1, aesBytesLeft);
+                    //MessageBox(nullptr, L"Succefully Decrypted [256]", LOG_TYPE, MB_OK);
+                }
+
+            }
+
+            outputBuffor[outputCount] = L'\0';
+            SendMessageW(reInput, WM_SETTEXT, NULL, (LPARAM)outputBuffor);
         }
 
         delete[] inputBuffor;
+        delete[] outputBuffor;
     }
 
     LRESULT CALLBACK WndProc(
@@ -408,8 +513,9 @@ namespace Window {
                 auto id = (HWND)lParam;
 
                 if (id == buttonEncodePath) {
-                    OnButtonConfirmClicked(windowHandle);
-                } else if (id == buttonDecodePath){
+                    OnButtonEncodePathClicked(windowHandle);
+                } else if (id == buttonDecodePath) {
+                    OnButtonDecodePathClicked(windowHandle);
                 } else if (id == buttonEncode) {
                     OnButtonEncodeClick(windowHandle);
                 } else if (id == buttonDecode) {

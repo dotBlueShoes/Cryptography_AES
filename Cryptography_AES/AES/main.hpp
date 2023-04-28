@@ -169,6 +169,154 @@ namespace AES {
 	template <class KeyType>
 	auto ReadEncodeWrite(
 		OUT  uint8& bytesLeftCount,
+		OUT  wchar* strEncoded,
+		IN const wchar* const strNocoded,
+		IN const size strNocodedCount,
+		IN const KeyType& key
+	) {
+		// Likely uses the result of the division - single DIV instruction.
+		const uint64 blocksCount = strNocodedCount / 16;
+		bytesLeftCount = strNocodedCount % 16;
+
+		//strEncoded = new wchar[(blocksCount * 16) + bytesLeftCount];
+
+		//if (blocksCount == 0) {
+		//	MessageBox(nullptr, L"Hello there !", LOG_TYPE, MB_OK);
+		//} else {
+			if (bytesLeftCount) { // There is a reminder we need to take care of.
+
+				// Initialize the whole block with 0'es so we don't do that with for-loop later.
+				AES::Block lastBlock { 0 };
+
+				for (uint8 i = 0; i < bytesLeftCount; ++i) {
+					lastBlock[i] = strNocoded[strNocodedCount - bytesLeftCount + i];
+				}
+
+				{
+					AES::Block nocoded, encoded;
+					//std::ofstream outputFile(encodedFilePath, std::ios::binary);
+
+					uint8* expandedKey = aes_init(key.size());
+					AES::ExpendKey<KeyType>(expandedKey, key);
+
+					// For each Block
+					for (size i = 0; i < blocksCount; ++i) {
+
+						// Copy read data to Block form
+						for (uint8 j = 0; j < 16; ++j) {
+							nocoded[j] = strNocoded[(i * 16) + j];
+						}
+
+						AES::Encode<KeyType>(encoded, expandedKey, nocoded);
+
+						// Write encoded Block
+						for (size j = 0; j < encoded.size(); ++j) {
+							strEncoded[(blocksCount * 16) + j] = encoded[j];
+						}
+
+					}
+
+					// Last block with 0'es
+					AES::Encode<KeyType>(encoded, expandedKey, lastBlock);
+
+					// Write encoded lastBlock
+					for (size i = 0; i < encoded.size(); ++i) {
+						strEncoded[i] = encoded[i];
+					}
+
+					//for (size i = 0; i < bytesLeftCount; ++i) {
+					//	strEncoded[i] = encoded[i];
+					//}
+
+					free(expandedKey);
+				}
+			//} else { // leftBytesCount == 0;
+			//	
+			//	// Enumerate though all blocks
+			//}
+
+		}
+	}
+
+	template <class KeyType>
+	auto ReadDecodeWrite(
+		OUT  wchar* strDecoded,
+		IN const wchar* const strEncoded,
+		IN const size strEncodedCount,
+		IN const KeyType& key,
+		IN const uint8 bytesLeftCount = 0
+	) {
+		// Likely uses the result of the division - single DIV instruction.
+		const uint64 blocksCount = strEncodedCount / 16;
+		const uint64 leftBytesCount = strEncodedCount % 16;
+
+		{
+
+			uint8* expandedKey = aes_init(key.size());
+			AES::ExpendKey<KeyType>(expandedKey, key);
+
+			//if (blocksCount != 0) {
+
+				AES::Block encoded, decoded;
+
+				// For each Block (exclude last one)
+				for (size i = 0; i < blocksCount - 1; ++i) {
+
+					// Copy read data to Block form
+					for (uint8 j = 0; j < 16; ++j) {
+						encoded[j] = strEncoded[(i * 16) + j];
+					}
+
+					AES::Decode<KeyType>(decoded, expandedKey, encoded);
+
+					// Write decoded Block
+					for (size j = 0; j < decoded.size(); ++j) {
+						strDecoded[(i * 16) + j] = decoded[j];
+					}
+
+				}
+
+				{ // Last block
+					const size lastBlockPosition = blocksCount - 1;
+
+					// Copy read data to Block form
+					for (uint8 j = 0; j < 16; ++j) {
+						encoded[j] = strEncoded[(lastBlockPosition * 16) + j];
+					}
+
+					AES::Decode<KeyType>(decoded, expandedKey, encoded);
+
+					// Write decoded Block
+					for (size j = 0; j < bytesLeftCount; ++j) {
+						strDecoded[(lastBlockPosition * 16) + j] = decoded[j];
+					}
+				}
+
+			//} else {
+			//
+			//	AES::Block encoded { 0 }, decoded;
+			//
+			//	// Copy read data to Block form
+			//	for (uint8 i = 0; i < strEncodedCount; ++i) {
+			//		encoded[i] = strEncoded[i];
+			//	}
+			//
+			//	AES::Decode<KeyType>(decoded, expandedKey, encoded);
+			//
+			//	// Output decoded Block
+			//	for (size i = 0; i < strEncodedCount; ++i) {
+			//		strDecoded[i] = decoded[i];
+			//	}
+			//
+			//}
+
+			free(expandedKey);
+		}
+	}
+
+	template <class KeyType>
+	auto ReadEncodeWrite(
+		OUT  uint8& bytesLeftCount,
 		IN const wchar* const nocodedFilePath,
 		IN const wchar* const encodedFilePath,
 		IN const KeyType& key
