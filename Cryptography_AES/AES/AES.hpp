@@ -127,9 +127,12 @@ namespace AES {
 		IN const wchar* const buffor,
 		IN const size& bufforCount
 	) {
-		for (size i = 0; i < bufforCount; i += 2) {
-			key[i] = (uint8)(buffor[i]);
-			key[i + 1] = (uint8)(buffor[i] >> 8);
+		uint8 count(0);
+
+		for (size i = 0; i < bufforCount; ++i) {
+			key[count] = (uint8)(buffor[i] << 8);
+			key[count + 1] = (uint8)(buffor[i]);
+			count += 2;
 		}
 	}
 
