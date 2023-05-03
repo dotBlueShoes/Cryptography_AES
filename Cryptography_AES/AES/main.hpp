@@ -59,22 +59,22 @@ namespace Tests {
 		AES::BlockWcharBuffor buffor;
 		AES::Block encoded, decoded;
 
-		uint8* expandedKey = aes_init(key.size());
-		aes_key_expansion(key.data(), expandedKey);
+		uint8* expandedKey = AES::Initialize(key.size());
+		AES::ExpendKey<AES::Key128>(expandedKey, key);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), nocoded.data(), nocoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_128 LOG_NOCODED, MB_OK);
 		}
 
-		aes_cipher(nocoded.data(), encoded.data(), expandedKey);
+		AES::Encode<AES::Key128>(encoded, expandedKey, nocoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), encoded.data(), encoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_128 LOG_ENCODED, MB_OK);
 		}
 
-		aes_inv_cipher(encoded.data(), decoded.data(), expandedKey);
+		AES::Decode<AES::Key128>(decoded, expandedKey, encoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), decoded.data(), decoded.size());
@@ -92,22 +92,22 @@ namespace Tests {
 		AES::BlockWcharBuffor buffor;
 		AES::Block encoded, decoded;
 
-		uint8* expandedKey = aes_init(key.size());
-		aes_key_expansion(key.data(), expandedKey);
+		uint8* expandedKey = AES::Initialize(key.size());
+		AES::ExpendKey<AES::Key192>(expandedKey, key);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), nocoded.data(), nocoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_192 LOG_NOCODED, MB_OK);
 		}
 
-		aes_cipher(nocoded.data(), encoded.data(), expandedKey);
+		AES::Encode<AES::Key192>(encoded, expandedKey, nocoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), encoded.data(), encoded.size());
 			MessageBox(nullptr, buffor.data(), LOG_TYPE LOG_192 LOG_ENCODED, MB_OK);
 		}
 
-		aes_inv_cipher(encoded.data(), decoded.data(), expandedKey);
+		AES::Decode<AES::Key192>(decoded, expandedKey, encoded);
 
 		{
 			BytesToWString<buffor.size()>(buffor.data(), decoded.data(), decoded.size());
@@ -125,7 +125,7 @@ namespace Tests {
 		AES::BlockWcharBuffor buffor;
 		AES::Block encoded, decoded;
 
-		uint8* expandedKey = aes_init(key.size());
+		uint8* expandedKey = AES::Initialize(key.size());
 		AES::ExpendKey<AES::Key256>(expandedKey, key);
 
 		{
@@ -206,7 +206,7 @@ namespace AES {
 
 		AES::Block nocoded, encoded;
 
-		uint8* expandedKey = aes_init(key.size());
+		uint8* expandedKey = AES::Initialize(key.size());
 		AES::ExpendKey<KeyType>(expandedKey, key);
 
 		// For each Block
@@ -278,7 +278,7 @@ namespace AES {
 
 		AES::Block encoded, decoded;
 
-		uint8* expandedKey = aes_init(key.size());
+		uint8* expandedKey = AES::Initialize(key.size());
 		AES::ExpendKey<KeyType>(expandedKey, key);
 
 		if (wordsLeftCount == 0) {
@@ -384,7 +384,7 @@ namespace AES {
 				AES::Block nocoded, encoded;
 				std::ofstream outputFile(encodedFilePath, std::ios::binary);
 
-				uint8* expandedKey = aes_init(key.size());
+				uint8* expandedKey = AES::Initialize(key.size());
 				AES::ExpendKey<KeyType>(expandedKey, key);
 
 				// For each Block
@@ -452,7 +452,7 @@ namespace AES {
 			AES::Block encoded, decoded;
 			std::ofstream outputFile(decodedFilePath, std::ios::binary);
 
-			uint8* expandedKey = aes_init(key.size());
+			uint8* expandedKey = AES::Initialize(key.size());
 			AES::ExpendKey<KeyType>(expandedKey, key);
 
 			// ! NOPE
