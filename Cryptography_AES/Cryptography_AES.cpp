@@ -26,7 +26,7 @@ int32 APIENTRY wWinMain (
         Window::MyRegisterClass(process, classNameMainWindow);
         if (!Window::InitInstance(process, nCmdShow, classNameMainWindow, titleMainWindow, windowPosition, windowArea)) return FALSE;
 
-        { // TESTS
+        /* { // TESTS
 
             //{ // Single Block
 
@@ -68,7 +68,7 @@ int32 APIENTRY wWinMain (
                 AES::ReadDecodeWrite<AES::Key256>(encodedFilePath, decodedFilePath, AES::TEST::Key256::sample1, extraBytes);
             }
             
-        }
+        }*/
         
     }
 
