@@ -12,15 +12,16 @@ namespace AES {
 	// standard, Nb = 4.
 	const int Nb = 4;
 
-	// Number of 32-bit words comprising the Cipher Key. For this
+	// Number of 32-bit double-words comprising the Cipher Key. For this
 	// standard, Nk = 4, 6, or 8.
+	// eg. 128, 196, 256
 	// [ INITIALIZED ]
-	int Nk;
+	int cipherKeydwords;
 
 	// Number of rounds, which is a function of  Nk  and  Nb (which is
 	// fixed). For this standard, Nr = 10, 12, or 14.
 	// [ INITIALIZED ]
-	int Nr;
+	int rounds;
 
 	using Key128 = array<uint8, 16>;
 	using Key192 = array<uint8, 24>;
@@ -322,34 +323,34 @@ namespace AES {
 		OUT uint8* expandedKey,
 		IN const KeyType& key
 	) {
-		const uint8 len = Nb * (Nr + 1);
+		const uint8 len = Nb * (rounds + 1);
 		uint8 tmp[4];
 
-		for (uint8 i = 0; i < Nk; i++) {
+		for (uint8 i = 0; i < cipherKeydwords; i++) {
 			expandedKey[4 * i + 0] = key.data()[4 * i + 0];
 			expandedKey[4 * i + 1] = key.data()[4 * i + 1];
 			expandedKey[4 * i + 2] = key.data()[4 * i + 2];
 			expandedKey[4 * i + 3] = key.data()[4 * i + 3];
 		}
 
-		for (uint8 i = Nk; i < len; i++) {
+		for (uint8 i = cipherKeydwords; i < len; i++) {
 			tmp[0] = expandedKey[4 * (i - 1) + 0];
 			tmp[1] = expandedKey[4 * (i - 1) + 1];
 			tmp[2] = expandedKey[4 * (i - 1) + 2];
 			tmp[3] = expandedKey[4 * (i - 1) + 3];
 
-			if (i % Nk == 0) {
+			if (i % cipherKeydwords == 0) {
 				KeyExpansion::WordRotate(tmp);
 				KeyExpansion::WordSubstitution(tmp);
-				KeyExpansion::WordCoefAdd(tmp, KeyExpansion::Rcon(i / Nk), tmp);
-			} else if (Nk > 6 && i % Nk == 4) {
+				KeyExpansion::WordCoefAdd(tmp, KeyExpansion::Rcon(i / cipherKeydwords), tmp);
+			} else if (cipherKeydwords > 6 && i % cipherKeydwords == 4) {
 				KeyExpansion::WordSubstitution(tmp);
 			}
 
-			expandedKey[4 * i + 0] = expandedKey[4 * (i - Nk) + 0] ^ tmp[0];
-			expandedKey[4 * i + 1] = expandedKey[4 * (i - Nk) + 1] ^ tmp[1];
-			expandedKey[4 * i + 2] = expandedKey[4 * (i - Nk) + 2] ^ tmp[2];
-			expandedKey[4 * i + 3] = expandedKey[4 * (i - Nk) + 3] ^ tmp[3];
+			expandedKey[4 * i + 0] = expandedKey[4 * (i - cipherKeydwords) + 0] ^ tmp[0];
+			expandedKey[4 * i + 1] = expandedKey[4 * (i - cipherKeydwords) + 1] ^ tmp[1];
+			expandedKey[4 * i + 2] = expandedKey[4 * (i - cipherKeydwords) + 2] ^ tmp[2];
+			expandedKey[4 * i + 3] = expandedKey[4 * (i - cipherKeydwords) + 3] ^ tmp[3];
 		}
 	}
 
@@ -358,13 +359,13 @@ namespace AES {
 
 		switch (keySize) {
 			default:
-			case 16: Nk = 4; Nr = 10; break;
-			case 24: Nk = 6; Nr = 12; break;
-			case 32: Nk = 8; Nr = 14; break;
+			case 16: cipherKeydwords = 4; rounds = 10; break;
+			case 24: cipherKeydwords = 6; rounds = 12; break;
+			case 32: cipherKeydwords = 8; rounds = 14; break;
 		}
 
 		// 1920 bits = 128 * 15 !!!! DZIA£A
-		return (uint8*)malloc(Nb * (Nr + 1) * 4);
+		return (uint8*)malloc(Nb * (rounds + 1) * 4);
 
 	}
 
@@ -382,7 +383,7 @@ namespace AES {
 
 		Encryption::AddRoundKey(state, expandedKey, 0);
 
-		for (uint8 r = 1; r < Nr; r++) {
+		for (uint8 r = 1; r < rounds; r++) {
 			Encryption::BytesSubstitution(state);
 			Encryption::ShiftRows(state);
 			Encryption::MixColumns(state);
@@ -391,7 +392,7 @@ namespace AES {
 
 		Encryption::BytesSubstitution(state);
 		Encryption::ShiftRows(state);
-		Encryption::AddRoundKey(state, expandedKey, Nr);
+		Encryption::AddRoundKey(state, expandedKey, rounds);
 
 		for (uint8 i = 0; i < 4; i++)
 			for (uint8 j = 0; j < Nb; j++)
@@ -410,9 +411,9 @@ namespace AES {
 			for (uint8 j = 0; j < Nb; j++)
 				state[Nb * i + j] = encoded[i + 4 * j];
 
-		Encryption::AddRoundKey(state, expandedKey, Nr);
+		Encryption::AddRoundKey(state, expandedKey, rounds);
 
-		for (uint8 r = Nr - 1; r >= 1; r--) {
+		for (uint8 r = rounds - 1; r >= 1; r--) {
 			Encryption::InverseShiftRows(state);
 			Encryption::InverseSubstitutionBytes(state);
 			Encryption::AddRoundKey(state, expandedKey, r);
